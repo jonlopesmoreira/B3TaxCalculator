@@ -114,9 +114,38 @@ foreach (var result in results)
     {
         Console.WriteLine("   [OPCOES]");
         Console.WriteLine($"      Compras: R$ {result.OptionTotalBuy:N2}");
-        Console.WriteLine($"      Vendas (bruto): R$ {result.OptionGrossSell:N2}");
-        Console.WriteLine($"      Lucro liquido (85%): R$ {result.OptionNetProfit:N2}");
-        Console.WriteLine($"      >> DARF (15%): R$ {result.OptionTax:N2}");
+        Console.WriteLine($"      Vendas: R$ {result.OptionGrossSell:N2}");
+
+        if (result.OptionProfit > 0)
+        {
+            Console.WriteLine($"      Lucro: R$ {result.OptionProfit:N2}");
+        }
+        if (result.OptionLoss > 0)
+        {
+            Console.WriteLine($"      Prejuizo: R$ {result.OptionLoss:N2}");
+        }
+        if (result.OptionAccumulatedLoss > 0)
+        {
+            Console.WriteLine($"      Prejuizo acumulado: R$ {result.OptionAccumulatedLoss:N2}");
+        }
+        if (result.OptionTaxableProfit > 0)
+        {
+            Console.WriteLine($"      Lucro tributavel: R$ {result.OptionTaxableProfit:N2}");
+            Console.WriteLine($"      >> DARF (15%): R$ {result.OptionTax:N2}");
+        }
+
+        // Mostrar operações que compensaram (reduziram o lucro bruto)
+        if (result.OptionCompensatingTrades.Count > 0 && result.OptionTotalBuy > 0)
+        {
+            Console.WriteLine();
+            Console.WriteLine("      >> Operacoes que reduziram o lucro bruto:");
+            foreach (var trade in result.OptionCompensatingTrades)
+            {
+                Console.WriteLine($"         {trade}");
+            }
+            Console.WriteLine($"      Total compensado: R$ {result.OptionTotalBuy:N2}");
+        }
+
         Console.WriteLine($"      Info: {result.OptionDescription}");
         Console.WriteLine();
     }

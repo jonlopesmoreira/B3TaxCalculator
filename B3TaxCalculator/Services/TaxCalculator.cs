@@ -8,22 +8,38 @@ public class TaxCalculator
     {
         public int Year { get; set; }
         public int Month { get; set; }
-        public decimal TotalBuy { get; set; }
-        public decimal TotalSell { get; set; }
-        public decimal Profit { get; set; }
-        public decimal Loss { get; set; }
-        public decimal AccumulatedLoss { get; set; }
-        public decimal TaxableProfit { get; set; }
-        public decimal Tax { get; set; }
-        public bool IsExempt { get; set; }
-        public string Description { get; set; } = string.Empty;
+
+        // Ações à vista
+        public decimal StockTotalBuy { get; set; }
+        public decimal StockTotalSell { get; set; }
+        public decimal StockProfit { get; set; }
+        public decimal StockLoss { get; set; }
+        public decimal StockAccumulatedLoss { get; set; }
+        public decimal StockTaxableProfit { get; set; }
+        public decimal StockTax { get; set; }
+        public bool StockIsExempt { get; set; }
+        public string StockDescription { get; set; } = string.Empty;
+
+        // Opções
+        public decimal OptionTotalBuy { get; set; }
+        public decimal OptionTotalSell { get; set; }
+        public decimal OptionProfit { get; set; }
+        public decimal OptionLoss { get; set; }
+        public decimal OptionAccumulatedLoss { get; set; }
+        public decimal OptionTaxableProfit { get; set; }
+        public decimal OptionTax { get; set; }
+        public string OptionDescription { get; set; } = string.Empty;
+
+        // Total geral
+        public decimal TotalTax => StockTax + OptionTax;
     }
 
     private const decimal DayTradeTaxRate = 0.20m;
     private const decimal SwingTradeTaxRate = 0.15m;
-    private const decimal ExemptionLimit = 20000m;
+    private const decimal StockExemptionLimit = 20000m; // Apenas para ações
 
-    private decimal _accumulatedLoss = 0m;
+    private decimal _stockAccumulatedLoss = 0m;
+    private decimal _optionAccumulatedLoss = 0m;
 
     public List<MonthlyResult> Calculate(List<Trade> trades)
     {
@@ -57,6 +73,34 @@ public class TaxCalculator
             Year = year,
             Month = month
         };
+
+        // Separar ações e opções
+        var stockTrades = trades.Where(t => t.Market == "VISTA").ToList();
+        var optionTrades = trades.Where(t => t.Market.StartsWith("OPCAO")).ToList();
+
+        // Calcular ações
+        CalculateMarket(stockTrades, result, true);
+
+        // Calcular opções
+        CalculateMarket(optionTrades, result, false);
+
+        return result;
+    }
+
+    private void CalculateMarket(List<Trade> trades, MonthlyResult result, bool isStock)
+    {
+        if (trades.Count == 0)
+        {
+            if (isStock)
+            {
+                result.StockDescription = "Sem operações de ações";
+            }
+            else
+            {
+                result.OptionDescription = "Sem operações de opções";
+            }
+            return;
+        }
 
         decimal totalBuy = 0m;
         decimal totalSell = 0m;
@@ -109,42 +153,74 @@ public class TaxCalculator
             }
         }
 
-        result.TotalBuy = totalBuy;
-        result.TotalSell = totalSell;
-
-        if (profit > 0)
+        if (isStock)
         {
-            result.Profit = profit;
-            result.TaxableProfit = Math.Max(0, profit - _accumulatedLoss);
+            result.StockTotalBuy = totalBuy;
+            result.StockTotalSell = totalSell;
+
+            if (profit > 0)
+            {
+                result.StockProfit = profit;
+                result.StockTaxableProfit = Math.Max(0, profit - _stockAccumulatedLoss);
+            }
+            else
+            {
+                result.StockLoss = Math.Abs(profit);
+                _stockAccumulatedLoss += Math.Abs(profit);
+            }
+
+            result.StockAccumulatedLoss = _stockAccumulatedLoss;
+
+            // Ações: isenção de R$ 20.000
+            if (totalSell <= StockExemptionLimit)
+            {
+                result.StockIsExempt = true;
+                result.StockDescription = $"Isento - vendas (R$ {totalSell:N2}) abaixo de R$ 20.000,00";
+            }
+            else if (result.StockTaxableProfit > 0)
+            {
+                result.StockTax = result.StockTaxableProfit * SwingTradeTaxRate;
+                result.StockDescription = $"DARF: R$ {result.StockTax:N2} (15% sobre lucro tributável)";
+                _stockAccumulatedLoss = Math.Max(0, _stockAccumulatedLoss - result.StockProfit);
+            }
+            else if (result.StockLoss > 0)
+            {
+                result.StockDescription = $"Prejuízo de R$ {result.StockLoss:N2} acumulado";
+            }
         }
         else
         {
-            result.Loss = Math.Abs(profit);
-            _accumulatedLoss += Math.Abs(profit);
-        }
+            result.OptionTotalBuy = totalBuy;
+            result.OptionTotalSell = totalSell;
 
-        result.AccumulatedLoss = _accumulatedLoss;
+            if (profit > 0)
+            {
+                result.OptionProfit = profit;
+                result.OptionTaxableProfit = Math.Max(0, profit - _optionAccumulatedLoss);
+            }
+            else
+            {
+                result.OptionLoss = Math.Abs(profit);
+                _optionAccumulatedLoss += Math.Abs(profit);
+            }
 
-        if (totalSell <= ExemptionLimit)
-        {
-            result.IsExempt = true;
-            result.Description = $"Isento - vendas totais (R$ {totalSell:N2}) abaixo de R$ 20.000,00";
-        }
-        else if (result.TaxableProfit > 0)
-        {
-            result.Tax = result.TaxableProfit * SwingTradeTaxRate;
-            result.Description = $"DARF: R$ {result.Tax:N2} (15% sobre lucro tributável)";
-            _accumulatedLoss = Math.Max(0, _accumulatedLoss - result.Profit);
-        }
-        else if (result.Loss > 0)
-        {
-            result.Description = $"Prejuízo de R$ {result.Loss:N2} acumulado para compensação futura";
-        }
-        else
-        {
-            result.Description = "Sem operações de venda";
-        }
+            result.OptionAccumulatedLoss = _optionAccumulatedLoss;
 
-        return result;
+            // Opções: NÃO há isenção, sempre tributa lucro
+            if (result.OptionTaxableProfit > 0)
+            {
+                result.OptionTax = result.OptionTaxableProfit * SwingTradeTaxRate;
+                result.OptionDescription = $"DARF: R$ {result.OptionTax:N2} (15% sobre lucro tributável)";
+                _optionAccumulatedLoss = Math.Max(0, _optionAccumulatedLoss - result.OptionProfit);
+            }
+            else if (result.OptionLoss > 0)
+            {
+                result.OptionDescription = $"Prejuízo de R$ {result.OptionLoss:N2} acumulado";
+            }
+            else if (result.OptionProfit > 0)
+            {
+                result.OptionDescription = "Lucro compensado com prejuízos anteriores";
+            }
+        }
     }
 }

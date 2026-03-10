@@ -34,6 +34,14 @@ foreach (var file in files)
         var trades = TradeParser.ParseFromText(text);
         allTrades.AddRange(trades);
         Console.WriteLine($"  ✓ {trades.Count} operação(ões) encontrada(s)");
+
+        // Mostrar detalhes das operações
+        foreach (var trade in trades)
+        {
+            var tipo = trade.IsBuy ? "COMPRA" : "VENDA";
+            Console.WriteLine($"    {trade.Date:dd/MM/yyyy} | {tipo} | {trade.Asset} | {trade.Quantity} x R$ {trade.Price:N2} = R$ {trade.Total:N2}");
+        }
+        Console.WriteLine();
     }
     catch (Exception ex)
     {
@@ -41,7 +49,6 @@ foreach (var file in files)
     }
 }
 
-Console.WriteLine();
 Console.WriteLine($"Total de operações: {allTrades.Count}");
 Console.WriteLine();
 
@@ -60,38 +67,84 @@ Console.WriteLine();
 foreach (var result in results)
 {
     Console.WriteLine($"📅 {result.Month:D2}/{result.Year}");
-    Console.WriteLine($"   Compras: R$ {result.TotalBuy:N2}");
-    Console.WriteLine($"   Vendas: R$ {result.TotalSell:N2}");
+    Console.WriteLine();
 
-    if (result.Profit > 0)
+    // Ações à vista
+    if (result.StockTotalBuy > 0 || result.StockTotalSell > 0)
     {
-        Console.WriteLine($"   Lucro: R$ {result.Profit:N2}");
-    }
-    if (result.Loss > 0)
-    {
-        Console.WriteLine($"   Prejuízo: R$ {result.Loss:N2}");
-    }
-    if (result.AccumulatedLoss > 0)
-    {
-        Console.WriteLine($"   Prejuízo acumulado: R$ {result.AccumulatedLoss:N2}");
-    }
-    if (result.TaxableProfit > 0)
-    {
-        Console.WriteLine($"   Lucro tributável: R$ {result.TaxableProfit:N2}");
-    }
-    if (result.Tax > 0)
-    {
-        Console.WriteLine($"   💰 IMPOSTO A PAGAR: R$ {result.Tax:N2}");
+        Console.WriteLine("   📊 AÇÕES À VISTA");
+        Console.WriteLine($"      Compras: R$ {result.StockTotalBuy:N2}");
+        Console.WriteLine($"      Vendas: R$ {result.StockTotalSell:N2}");
+
+        if (result.StockProfit > 0)
+        {
+            Console.WriteLine($"      Lucro: R$ {result.StockProfit:N2}");
+        }
+        if (result.StockLoss > 0)
+        {
+            Console.WriteLine($"      Prejuízo: R$ {result.StockLoss:N2}");
+        }
+        if (result.StockAccumulatedLoss > 0)
+        {
+            Console.WriteLine($"      Prejuízo acumulado: R$ {result.StockAccumulatedLoss:N2}");
+        }
+        if (result.StockTaxableProfit > 0)
+        {
+            Console.WriteLine($"      Lucro tributável: R$ {result.StockTaxableProfit:N2}");
+        }
+        if (result.StockTax > 0)
+        {
+            Console.WriteLine($"      💰 IMPOSTO: R$ {result.StockTax:N2}");
+        }
+
+        Console.WriteLine($"      ℹ️  {result.StockDescription}");
+        Console.WriteLine();
     }
 
-    Console.WriteLine($"   ℹ️  {result.Description}");
+    // Opções
+    if (result.OptionTotalBuy > 0 || result.OptionTotalSell > 0)
+    {
+        Console.WriteLine("   📈 OPÇÕES");
+        Console.WriteLine($"      Compras: R$ {result.OptionTotalBuy:N2}");
+        Console.WriteLine($"      Vendas: R$ {result.OptionTotalSell:N2}");
+
+        if (result.OptionProfit > 0)
+        {
+            Console.WriteLine($"      Lucro: R$ {result.OptionProfit:N2}");
+        }
+        if (result.OptionLoss > 0)
+        {
+            Console.WriteLine($"      Prejuízo: R$ {result.OptionLoss:N2}");
+        }
+        if (result.OptionAccumulatedLoss > 0)
+        {
+            Console.WriteLine($"      Prejuízo acumulado: R$ {result.OptionAccumulatedLoss:N2}");
+        }
+        if (result.OptionTaxableProfit > 0)
+        {
+            Console.WriteLine($"      Lucro tributável: R$ {result.OptionTaxableProfit:N2}");
+        }
+        if (result.OptionTax > 0)
+        {
+            Console.WriteLine($"      💰 IMPOSTO: R$ {result.OptionTax:N2}");
+        }
+
+        Console.WriteLine($"      ℹ️  {result.OptionDescription}");
+        Console.WriteLine();
+    }
+
+    if (result.TotalTax > 0)
+    {
+        Console.WriteLine($"   💵 TOTAL DO MÊS: R$ {result.TotalTax:N2}");
+    }
+
     Console.WriteLine();
 }
 
-var totalTax = results.Sum(r => r.Tax);
+var totalTax = results.Sum(r => r.TotalTax);
 if (totalTax > 0)
 {
-    Console.WriteLine($"💵 TOTAL DE IMPOSTO A PAGAR: R$ {totalTax:N2}");
+    Console.WriteLine($"💵 TOTAL DE IMPOSTO A PAGAR NO PERÍODO: R$ {totalTax:N2}");
 }
 else
 {

@@ -46,7 +46,7 @@ foreach (var file in files)
                 var tipo = trade.IsBuy ? "COMPRA" : "VENDA";
                 var market = trade.Market == "VISTA" ? "Acao" : "Opcao";
                 // Formato tabular alinhado: TIPO | Market | Asset(20) | Qtd(3) x R$ Preco(8) = R$ Total(10)
-                Console.WriteLine($"   {tipo,-6} | {market,-5} | {trade.Asset,-16} | {trade.Quantity,3} * {trade.Price,4:N2} = R$ {trade.Total,4:N2}");
+                Console.WriteLine($"   {tipo,-6} | {market,-5} | {trade.Asset,-16} | {trade.Quantity,4} * {trade.Price,-7:N2} = R$ {trade.Total,-8:N2}");
             }
         }
         Console.WriteLine();

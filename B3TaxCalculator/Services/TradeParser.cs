@@ -9,67 +9,60 @@ public class TradeParser
     {
         var trades = new List<Trade>();
 
-        // Buscar TODAS as datas no texto
-        var datePattern = @"Data preg[ãa]o\s*(\d{2}/\d{2}/\d{4})";
-        var dateMatches = Regex.Matches(pdfText, datePattern);
+        // Buscar padrão "Nr. nota [NUMERO]" seguido de "Data pregão [DATA]"
+        // Isso identifica cada nota de corretagem e sua data
+        var notaPattern = @"Nr\.\s*nota\s*(\d+).*?Data preg[ãa]o\s*(\d{2}/\d{2}/\d{4})";
+        var notaMatches = Regex.Matches(pdfText, notaPattern, RegexOptions.Singleline);
 
         // Buscar ações à vista (com ON)
         var vistaPattern = @"([CV])VISTA([A-Z]+[0-9]*)\s*ON\s+[A-Z0-9]*@(\d{3})(\d+),(\d{2})(\d+)[.,]?(\d{2,3}),(\d{2})[DC]";
         var vistaMatches = Regex.Matches(pdfText, vistaPattern);
 
-        // Buscar Tesouro Direto (formato colado sem espaços do PdfPig)
-        // Formato real extraído: 7-BOVESPACVISTAINVESTO LFTB          F11@#2118,44236,88D
-        // Padrão: [NUM]-BOVESPACVISTA[NOME]ESPAÇO[LFTB F11]@[#]?[QTD1DIG][PRECO3DIG],[CENTS][TOTAL3DIG],[CENTS]D
+        // Buscar Tesouro Direto
         var tesouroDiretoPattern = @"\d+-BOVESPACVISTA([A-Z]+)\s+(LFTB\s+[A-Z0-9]+)\s*@[#]?(\d{1})(\d{3}),(\d{2})(\d{3}),(\d{2})[DC]";
         var tesouroDiretoMatches = Regex.Matches(pdfText, tesouroDiretoPattern);
 
-        // Buscar opções - capturar código COMPLETO da opção
-        // Formato: VOPCAO DE VENDA03/26PETRO412 PN 40,40 PETRE FM#1000,4949,00C
-        // Captura: Código completo (PETRO412) antes de ON/PN, não apenas a série (PETRE)
+        // Buscar opções - código completo
         var optionPattern = @"([CV])OPCAO DE (COMPRA|VENDA)\d{2}/\d{2}([A-Z0-9W]+)\s+[A-Z]+\s+[\d,]+\s+[A-Z]+[A-Z0-9/#\s]*?(\d{3})(\d),(\d{2})(\d+),(\d{2})[DC]";
         var optionMatches = Regex.Matches(pdfText, optionPattern);
 
-        Console.WriteLine($"  📅 {dateMatches.Count} data(s) | 📊 {vistaMatches.Count} ações | 📜 {tesouroDiretoMatches.Count} RF | 📈 {optionMatches.Count} opções");
+        Console.WriteLine($"  [{notaMatches.Count}] nota(s) | [{vistaMatches.Count}] acoes | [{tesouroDiretoMatches.Count}] RF | [{optionMatches.Count}] opcoes");
 
         // Criar lista de todas as operações com suas posições
-        var allOperations = new List<(int Position, string Type, Match Match, string OpType)>();
+        var allOperations = new List<(int Position, string Type, Match Match)>();
 
         foreach (Match match in vistaMatches)
         {
-            allOperations.Add((match.Index, "VISTA_ON", match, "VISTA"));
+            allOperations.Add((match.Index, "VISTA_ON", match));
         }
 
         foreach (Match match in tesouroDiretoMatches)
         {
-            allOperations.Add((match.Index, "TESOURO", match, "VISTA"));
+            allOperations.Add((match.Index, "TESOURO", match));
         }
 
         foreach (Match match in optionMatches)
         {
-            allOperations.Add((match.Index, "OPCAO", match, "OPCAO"));
+            allOperations.Add((match.Index, "OPCAO", match));
         }
 
         // Ordenar por posição
         allOperations = allOperations.OrderBy(o => o.Position).ToList();
 
-        Console.WriteLine($"\n  🔍 DEBUG: Mapeamento Data -> Operações:");
-
-        // Processar cada operação
+        // Processar cada operação e associar à nota de corretagem
         foreach (var op in allOperations)
         {
-            var date = FindClosestDateBefore(dateMatches, op.Position);
+            // Encontrar a nota de corretagem mais próxima DEPOIS da operação
+            var nota = FindClosestNotaAfter(notaMatches, op.Position);
 
-            if (!date.HasValue)
-            {
+            if (nota == null)
                 continue;
-            }
 
             if (op.Type == "VISTA_ON")
             {
                 var match = op.Match;
                 var asset = match.Groups[2].Value.Trim();
                 var side = match.Groups[1].Value;
-                Console.WriteLine($"     {date.Value:dd/MM/yyyy} -> {side}VISTA {asset} (pos: {op.Position})");
 
                 var quantity = int.Parse(match.Groups[3].Value);
                 var priceInt = int.Parse(match.Groups[4].Value);
@@ -79,7 +72,7 @@ public class TradeParser
 
                 trades.Add(new Trade
                 {
-                    Date = date.Value,
+                    Date = nota.Value.Date,
                     Side = side,
                     Market = "VISTA",
                     Asset = asset,
@@ -91,24 +84,23 @@ public class TradeParser
             else if (op.Type == "TESOURO")
             {
                 var match = op.Match;
-                var assetBase = match.Groups[1].Value.Trim(); // INVESTO
-                var assetDetail = match.Groups[2].Value.Trim(); // LFTB F11
-                var asset = $"{assetBase} {assetDetail}".Trim();
+                var assetBase = match.Groups[1].Value.Trim();
+                var assetDetail = match.Groups[2].Value.Trim();
 
-                // C ou V está implícito como COMPRA no padrão sem espaços
+                // Normalizar espaços múltiplos para um único espaço
+                var asset = $"{assetBase} {assetDetail}".Trim();
+                asset = Regex.Replace(asset, @"\s+", " ");
+
                 var side = "C";
-                Console.WriteLine($"     {date.Value:dd/MM/yyyy} -> {side}VISTA {asset} [Tesouro] (pos: {op.Position})");
 
                 var quantity = int.Parse(match.Groups[3].Value);
                 var priceInt = int.Parse(match.Groups[4].Value);
                 var priceCents = int.Parse(match.Groups[5].Value);
-                var totalInt = int.Parse(match.Groups[6].Value);
-                var totalCents = int.Parse(match.Groups[7].Value);
                 var price = priceInt + (priceCents / 100m);
 
                 trades.Add(new Trade
                 {
-                    Date = date.Value,
+                    Date = nota.Value.Date,
                     Side = side,
                     Market = "VISTA",
                     Asset = asset,
@@ -123,7 +115,6 @@ public class TradeParser
                 var asset = match.Groups[3].Value.Trim();
                 var side = match.Groups[1].Value;
                 var type = match.Groups[2].Value;
-                Console.WriteLine($"     {date.Value:dd/MM/yyyy} -> {side}OPCAO {type} {asset} (pos: {op.Position})");
 
                 var quantity = int.Parse(match.Groups[4].Value);
                 var priceInt = int.Parse(match.Groups[5].Value);
@@ -132,7 +123,7 @@ public class TradeParser
 
                 trades.Add(new Trade
                 {
-                    Date = date.Value,
+                    Date = nota.Value.Date,
                     Side = side,
                     Market = "OPCAO_" + type,
                     Asset = asset,
@@ -149,62 +140,53 @@ public class TradeParser
         return trades;
     }
 
-    private static DateTime? FindClosestDateBefore(MatchCollection dateMatches, int position)
+    private static (string NotaNum, DateTime Date)? FindClosestNotaAfter(MatchCollection notaMatches, int position)
     {
-        DateTime? closestDate = null;
         int closestDistance = int.MaxValue;
+        (string NotaNum, DateTime Date)? closestNota = null;
 
-        // No PDF, as operações VÊM ANTES da data do pregão
-        // Então devemos pegar a data mais próxima DEPOIS da posição da operação
-        foreach (Match dateMatch in dateMatches)
+        // Encontrar a nota mais próxima DEPOIS da posição da operação
+        foreach (Match notaMatch in notaMatches)
         {
-            if (dateMatch.Index > position) // Data DEPOIS da operação
+            if (notaMatch.Index > position)
             {
-                int distance = dateMatch.Index - position;
+                int distance = notaMatch.Index - position;
                 if (distance < closestDistance)
                 {
-                    if (DateTime.TryParse(dateMatch.Groups[1].Value, out var date))
+                    var notaNum = notaMatch.Groups[1].Value;
+                    if (DateTime.TryParse(notaMatch.Groups[2].Value, out var date))
                     {
-                        closestDate = date;
+                        closestNota = (notaNum, date);
                         closestDistance = distance;
                     }
                 }
             }
         }
 
-        // Se não encontrou data depois, pegar a mais próxima antes (fallback)
-        if (!closestDate.HasValue)
+        // Se não encontrou depois, pegar a mais próxima antes (fallback)
+        if (!closestNota.HasValue)
         {
-            int prevDistance = int.MaxValue;
-            foreach (Match dateMatch in dateMatches)
+            closestDistance = int.MaxValue;
+            foreach (Match notaMatch in notaMatches)
             {
-                if (dateMatch.Index < position)
+                if (notaMatch.Index < position)
                 {
-                    int distance = position - dateMatch.Index;
-                    if (distance < prevDistance)
+                    int distance = position - notaMatch.Index;
+                    if (distance < closestDistance)
                     {
-                        if (DateTime.TryParse(dateMatch.Groups[1].Value, out var date))
+                        var notaNum = notaMatch.Groups[1].Value;
+                        if (DateTime.TryParse(notaMatch.Groups[2].Value, out var date))
                         {
-                            closestDate = date;
-                            prevDistance = distance;
+                            closestNota = (notaNum, date);
+                            closestDistance = distance;
                         }
                     }
                 }
             }
         }
 
-        return closestDate;
+        return closestNota;
     }
 
-    // Métodos não utilizados - manter para compatibilidade futura
-    private static List<Trade> ParseAllTradesFromLine(string line, DateTime date)
-    {
-        return new List<Trade>();
-    }
-
-    private static bool TryParseDate(string line, out DateTime date)
-    {
-        date = DateTime.MinValue;
-        return false;
-    }
+    // Métodos não utilizados - removidos
 }

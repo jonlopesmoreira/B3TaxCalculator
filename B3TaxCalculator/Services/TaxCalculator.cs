@@ -23,11 +23,13 @@ public class TaxCalculator
         // Opções
         public decimal OptionTotalBuy { get; set; }
         public decimal OptionTotalSell { get; set; }
+        public decimal OptionGrossSell { get; set; }     // Valor bruto das vendas
+        public decimal OptionNetProfit { get; set; }     // 85% do valor bruto (lucro líquido)
         public decimal OptionProfit { get; set; }
         public decimal OptionLoss { get; set; }
         public decimal OptionAccumulatedLoss { get; set; }
         public decimal OptionTaxableProfit { get; set; }
-        public decimal OptionTax { get; set; }
+        public decimal OptionTax { get; set; }           // 15% do valor bruto (DARF)
         public string OptionDescription { get; set; } = string.Empty;
 
         // Total geral
@@ -193,6 +195,11 @@ public class TaxCalculator
             result.OptionTotalBuy = totalBuy;
             result.OptionTotalSell = totalSell;
 
+            // Para opções: tributar sobre TODO o valor bruto das vendas
+            result.OptionGrossSell = totalSell;
+            result.OptionNetProfit = totalSell * 0.85m;  // 85% fica para o investidor
+            result.OptionTax = totalSell * 0.15m;        // 15% é DARF
+
             if (profit > 0)
             {
                 result.OptionProfit = profit;
@@ -206,20 +213,18 @@ public class TaxCalculator
 
             result.OptionAccumulatedLoss = _optionAccumulatedLoss;
 
-            // Opções: NÃO há isenção, sempre tributa lucro
-            if (result.OptionTaxableProfit > 0)
+            // Descrição
+            if (totalSell > 0)
             {
-                result.OptionTax = result.OptionTaxableProfit * SwingTradeTaxRate;
-                result.OptionDescription = $"DARF: R$ {result.OptionTax:N2} (15% sobre lucro tributável)";
-                _optionAccumulatedLoss = Math.Max(0, _optionAccumulatedLoss - result.OptionProfit);
+                result.OptionDescription = $"DARF: R$ {result.OptionTax:N2} (15% de R$ {result.OptionGrossSell:N2})";
             }
             else if (result.OptionLoss > 0)
             {
-                result.OptionDescription = $"Prejuízo de R$ {result.OptionLoss:N2} acumulado";
+                result.OptionDescription = $"Prejuizo de R$ {result.OptionLoss:N2} acumulado";
             }
-            else if (result.OptionProfit > 0)
+            else
             {
-                result.OptionDescription = "Lucro compensado com prejuízos anteriores";
+                result.OptionDescription = "Sem operacoes de venda";
             }
         }
     }

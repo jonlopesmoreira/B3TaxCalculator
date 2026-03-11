@@ -8,10 +8,14 @@ public class TaxCalculator
     {
         public int Year { get; set; }
         public int Month { get; set; }
+        public decimal PriorMonthTaxCarryover { get; set; }
+        public decimal TaxCarryoverToNextMonth { get; set; }
+        public decimal TaxToPayThisMonth { get; set; }
 
         // Ações à vista
         public decimal StockTotalBuy { get; set; }
         public decimal StockTotalSell { get; set; }
+        public decimal StockTotalFees { get; set; }
         public decimal StockProfit { get; set; }
         public decimal StockLoss { get; set; }
         public decimal StockAccumulatedLoss { get; set; }
@@ -23,6 +27,8 @@ public class TaxCalculator
         // Opções
         public decimal OptionTotalBuy { get; set; }
         public decimal OptionTotalSell { get; set; }
+        public decimal OptionTotalFees { get; set; }
+        public decimal OptionCompensatingBuyTotal { get; set; }
         public decimal OptionGrossSell { get; set; }     // Valor bruto das vendas
         public decimal OptionNetProfit { get; set; }     // 85% do valor bruto (lucro líquido)
         public decimal OptionProfit { get; set; }
@@ -40,6 +46,7 @@ public class TaxCalculator
     private const decimal DayTradeTaxRate = 0.20m;
     private const decimal SwingTradeTaxRate = 0.15m;
     private const decimal StockExemptionLimit = 20000m; // Apenas para ações
+    private const decimal MinimumDarfPayment = 10m;
 
     private decimal _stockAccumulatedLoss = 0m;
     private decimal _optionAccumulatedLoss = 0m;
@@ -55,7 +62,33 @@ public class TaxCalculator
             results.Add(result);
         }
 
+        ApplyMinimumDarfRule(results);
+
         return results;
+    }
+
+    private static void ApplyMinimumDarfRule(List<MonthlyResult> results)
+    {
+        decimal carryover = 0m;
+
+        foreach (var result in results.OrderBy(r => r.Year).ThenBy(r => r.Month))
+        {
+            result.PriorMonthTaxCarryover = carryover;
+
+            var payableAmount = carryover + result.TotalTax;
+            if (payableAmount >= MinimumDarfPayment)
+            {
+                result.TaxToPayThisMonth = payableAmount;
+                result.TaxCarryoverToNextMonth = 0m;
+                carryover = 0m;
+            }
+            else
+            {
+                result.TaxToPayThisMonth = 0m;
+                result.TaxCarryoverToNextMonth = payableAmount;
+                carryover = payableAmount;
+            }
+        }
     }
 
     private List<(int Year, int Month, List<Trade> Trades)> GroupByMonth(List<Trade> trades)
@@ -107,6 +140,8 @@ public class TaxCalculator
 
         decimal totalBuy = 0m;
         decimal totalSell = 0m;
+        decimal totalFees = 0m;
+        decimal compensatingBuyTotal = 0m;
         decimal profit = 0m;
         var compensatingTrades = new List<string>(); // Rastrear operações que compensam
 
@@ -115,15 +150,12 @@ public class TaxCalculator
 
         foreach (var trade in trades.OrderBy(t => t.Date))
         {
+            totalFees += trade.Fees;
+
             if (trade.IsBuy)
             {
                 totalBuy += trade.NetTotal;
-
-                // Registrar TODAS as compras (para opções)
-                if (!isStock)
-                {
-                    compensatingTrades.Add($"{trade.Date:dd/MM}: COMPRA {trade.Asset} {trade.Quantity}x @ {trade.Price:N2} = R$ {trade.NetTotal:N2}");
-                }
+                var unitBuyNet = trade.NetTotal / trade.Quantity;
 
                 // Verificar se está zerando uma posição short
                 if (shortPositions.ContainsKey(trade.Asset))
@@ -132,10 +164,17 @@ public class TaxCalculator
                     var quantityToClose = Math.Min(trade.Quantity, shortPos.Quantity);
 
                     // Calcular lucro/prejuízo do short
-                    var costToClose = trade.Price * quantityToClose;
-                    var gainedFromShort = shortPos.AvgPrice * quantityToClose;
-                    var tradeProfitLoss = gainedFromShort - costToClose;
+                    var costToClose = unitBuyNet * quantityToClose;
+                    var tradeProfitLoss = isStock
+                        ? (shortPos.AvgPrice * quantityToClose) - costToClose
+                        : -costToClose;
                     profit += tradeProfitLoss;
+
+                    if (!isStock && quantityToClose > 0)
+                    {
+                        compensatingBuyTotal += costToClose;
+                        compensatingTrades.Add($"{trade.Date:dd/MM}: COMPRA {trade.Asset} {quantityToClose}x @ {trade.Price:N2} = R$ {costToClose:N2}");
+                    }
 
                     // Atualizar posição short
                     var remainingShort = shortPos.Quantity - quantityToClose;
@@ -156,13 +195,13 @@ public class TaxCalculator
                         {
                             var pos = buyPositions[trade.Asset];
                             var totalQty = pos.Quantity + remainingBuy;
-                            var totalCost = (pos.Quantity * pos.AvgPrice) + (trade.Price * remainingBuy);
+                            var totalCost = (pos.Quantity * pos.AvgPrice) + (unitBuyNet * remainingBuy);
                             var newAvgPrice = totalCost / totalQty;
                             buyPositions[trade.Asset] = (totalQty, newAvgPrice);
                         }
                         else
                         {
-                            buyPositions[trade.Asset] = (remainingBuy, trade.Price);
+                            buyPositions[trade.Asset] = (remainingBuy, unitBuyNet);
                         }
                     }
                 }
@@ -176,12 +215,13 @@ public class TaxCalculator
                 }
                 else
                 {
-                    buyPositions[trade.Asset] = (trade.Quantity, trade.Price);
+                    buyPositions[trade.Asset] = (trade.Quantity, unitBuyNet);
                 }
             }
             else if (trade.IsSell)
             {
-                totalSell += trade.Total;
+                totalSell += trade.NetTotal;
+                var unitSellNet = trade.NetTotal / trade.Quantity;
 
                 // Verificar se está vendendo posição comprada (long)
                 if (buyPositions.ContainsKey(trade.Asset))
@@ -190,7 +230,7 @@ public class TaxCalculator
                     var quantityToSell = Math.Min(trade.Quantity, pos.Quantity);
 
                     var costBasis = pos.AvgPrice * quantityToSell;
-                    var saleValue = trade.Price * quantityToSell;
+                    var saleValue = unitSellNet * quantityToSell;
                     var tradeProfitLoss = saleValue - costBasis;
                     profit += tradeProfitLoss;
 
@@ -208,22 +248,32 @@ public class TaxCalculator
                     var remainingSell = trade.Quantity - quantityToSell;
                     if (remainingSell > 0)
                     {
+                        if (!isStock)
+                        {
+                            profit += unitSellNet * remainingSell;
+                        }
+
                         if (shortPositions.ContainsKey(trade.Asset))
                         {
                             var shortPos = shortPositions[trade.Asset];
                             var totalQty = shortPos.Quantity + remainingSell;
-                            var totalGain = (shortPos.Quantity * shortPos.AvgPrice) + (trade.Price * remainingSell);
+                            var totalGain = (shortPos.Quantity * shortPos.AvgPrice) + (unitSellNet * remainingSell);
                             var newAvgPrice = totalGain / totalQty;
                             shortPositions[trade.Asset] = (totalQty, newAvgPrice);
                         }
                         else
                         {
-                            shortPositions[trade.Asset] = (remainingSell, trade.Price);
+                            shortPositions[trade.Asset] = (remainingSell, unitSellNet);
                         }
                     }
                 }
                 else
                 {
+                    if (!isStock)
+                    {
+                        profit += trade.NetTotal;
+                    }
+
                     // Venda descoberta (short) - criar posição short
                     if (shortPositions.ContainsKey(trade.Asset))
                     {
@@ -235,7 +285,7 @@ public class TaxCalculator
                     }
                     else
                     {
-                        shortPositions[trade.Asset] = (trade.Quantity, trade.Price);
+                        shortPositions[trade.Asset] = (trade.Quantity, unitSellNet);
                     }
                 }
             }
@@ -245,6 +295,7 @@ public class TaxCalculator
         {
             result.StockTotalBuy = totalBuy;
             result.StockTotalSell = totalSell;
+            result.StockTotalFees = totalFees;
 
             if (profit > 0)
             {
@@ -280,22 +331,20 @@ public class TaxCalculator
         {
             result.OptionTotalBuy = totalBuy;
             result.OptionTotalSell = totalSell;
+            result.OptionTotalFees = totalFees;
+            result.OptionCompensatingBuyTotal = compensatingBuyTotal;
             result.OptionGrossSell = totalSell;
             result.OptionCompensatingTrades = compensatingTrades;
 
-            // IMPORTANTE: Para opções, o lucro mensal = Vendas - Compras
-            // Não importa se é venda coberta ou descoberta, tributa no mês
-            var monthlyProfit = totalSell - totalBuy;
-
-            if (monthlyProfit > 0)
+            if (profit > 0)
             {
-                result.OptionProfit = monthlyProfit;
-                result.OptionTaxableProfit = Math.Max(0, monthlyProfit - _optionAccumulatedLoss);
+                result.OptionProfit = profit;
+                result.OptionTaxableProfit = Math.Max(0, profit - _optionAccumulatedLoss);
             }
-            else if (monthlyProfit < 0)
+            else if (profit < 0)
             {
-                result.OptionLoss = Math.Abs(monthlyProfit);
-                _optionAccumulatedLoss += Math.Abs(monthlyProfit);
+                result.OptionLoss = Math.Abs(profit);
+                _optionAccumulatedLoss += Math.Abs(profit);
             }
 
             result.OptionAccumulatedLoss = _optionAccumulatedLoss;
@@ -320,7 +369,7 @@ public class TaxCalculator
             }
             else if (totalSell > 0)
             {
-                result.OptionNetProfit = monthlyProfit;
+                result.OptionNetProfit = profit;
                 result.OptionDescription = $"Sem lucro tributavel neste mes";
             }
             else

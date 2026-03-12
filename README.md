@@ -89,26 +89,13 @@ Esse projeto é útil para investidores que desejam:
 
 ## Screenshots
 
-> As imagens precisam estar versionadas no repositório em `docs/images/`.
-
 ### Tela principal
-
-Salve a imagem como `docs/images/main-screen.png`.
 
 ![Tela principal](docs/images/main-screen.png)
 
 ### Resumo mensal
 
-Salve a imagem como `docs/images/monthly-summary.png`.
-
 ![Resumo mensal](docs/images/monthly-summary.png)
-
-### Sugestões de capturas
-
-- janela principal do aplicativo
-- seleção de PDFs
-- saída com resumo mensal processado
-- trecho da auditoria de opções
 
 ## Executar localmente
 
@@ -205,7 +192,9 @@ Este software tem finalidade de apoio e conferência. Ele **não substitui** val
 
 ## Licença
 
-Este repositório ainda não possui uma licença explícita definida no README.
+Distribuído sob a licença **MIT**.
+
+Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 ## Autor
 

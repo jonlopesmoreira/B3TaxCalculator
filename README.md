@@ -89,23 +89,19 @@ Esse projeto é útil para investidores que desejam:
 
 ## Screenshots
 
-> Adicione as capturas de tela em `docs/images/` para que apareçam automaticamente no README.
+> As imagens precisam estar versionadas no repositório em `docs/images/`.
 
 ### Tela principal
 
 Salve a imagem como `docs/images/main-screen.png`.
 
-```markdown
 ![Tela principal](docs/images/main-screen.png)
-```
 
 ### Resumo mensal
 
 Salve a imagem como `docs/images/monthly-summary.png`.
 
-```markdown
 ![Resumo mensal](docs/images/monthly-summary.png)
-```
 
 ### Sugestões de capturas
 

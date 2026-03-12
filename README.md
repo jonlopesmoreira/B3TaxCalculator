@@ -7,9 +7,19 @@
 
 Aplicativo desktop em **Windows Forms (.NET 10)** para leitura de **notas de corretagem em PDF** e geração de um **resumo mensal de apuração de imposto** para operações da **B3**.
 
+Projeto focado em **automação de processamento de documentos financeiros**, **extração de dados a partir de PDFs** e **consolidação de regras de cálculo tributário** em uma aplicação desktop simples e objetiva.
+
 ## Visão geral
 
 O objetivo do projeto é facilitar a conferência de operações e a apuração mensal, consolidando compras, vendas, custos e compensações em uma interface simples.
+
+Além do uso prático, este repositório também demonstra experiência com:
+
+- desenvolvimento de aplicações desktop em .NET
+- modelagem de regras de negócio
+- parsing de texto extraído de PDF
+- organização de código em camadas simples de UI, modelos e serviços
+- publicação de aplicação Windows em modo `self-contained` e arquivo único
 
 ### Funcionalidades
 
@@ -29,6 +39,16 @@ O objetivo do projeto é facilitar a conferência de operações e a apuração 
 - **.NET 10**
 - **Windows Forms**
 - **PdfPig** para leitura e extração de texto dos PDFs
+
+## Destaques técnicos
+
+- interface desktop construída com **Windows Forms**
+- leitura de documentos PDF com preservação de linhas para melhorar o parsing
+- uso de **expressões regulares** para identificar notas, ativos e operações
+- rateio proporcional de custos por nota de corretagem
+- cálculo separado para **ações à vista** e **opções**
+- controle de **prejuízo acumulado**, **lucro tributável** e **saldo mínimo de DARF**
+- geração de saída textual detalhada para conferência manual
 
 ## Requisitos
 
@@ -57,6 +77,15 @@ O aplicativo mostra, entre outros dados:
 - lucro tributável
 - DARF devido
 - saldo transportado para o mês seguinte
+
+## Caso de uso
+
+Esse projeto é útil para investidores que desejam:
+
+- consolidar várias notas de corretagem rapidamente
+- conferir operações por mês
+- entender o impacto de custos e recompras no resultado
+- visualizar uma memória de cálculo antes do preenchimento manual das obrigações fiscais
 
 ## Executar localmente
 
@@ -114,6 +143,15 @@ B3TaxCalculator/
 - [ ] suporte a mais layouts de nota
 - [ ] exportação do resultado para arquivo
 - [ ] melhorias de usabilidade da interface
+
+## Portfólio
+
+Este projeto pode ser apresentado como exemplo de:
+
+- aplicação desktop com foco em produtividade
+- automação de tarefa financeira recorrente
+- transformação de documento semiestruturado em informação útil
+- implementação de regra de negócio com rastreabilidade no resultado final
 
 ## Contribuição
 

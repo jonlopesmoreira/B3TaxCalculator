@@ -15,9 +15,9 @@ public class NotaCosts
     public decimal ISS { get; set; }
     public decimal TaxaCustodia { get; set; }
     public decimal TaxaTermoOpcoes { get; set; }
-    public decimal TaxaOperacional { get; set; }  // XP tem este campo
+    public decimal TaxaOperacional { get; set; }  
     public decimal Execucao { get; set; }
-    public decimal Impostos { get; set; }         // XP tem este campo
+    public decimal Impostos { get; set; }       
     public decimal IRRF { get; set; }
     public decimal Outros { get; set; }
 

@@ -38,6 +38,7 @@ public class TaxCalculator
         public decimal OptionTax { get; set; }           // 15% do valor bruto (DARF)
         public string OptionDescription { get; set; } = string.Empty;
         public List<string> OptionCompensatingTrades { get; set; } = new List<string>(); // Operações que reduziram o lucro
+        public List<OptionAuditEntry> OptionAuditEntries { get; set; } = new List<OptionAuditEntry>();
 
         // Total geral
         public decimal TotalTax => StockTax + OptionTax;
@@ -50,6 +51,7 @@ public class TaxCalculator
 
     private decimal _stockAccumulatedLoss = 0m;
     private decimal _optionAccumulatedLoss = 0m;
+    private decimal _optionRunningNetAccumulated = 0m;
 
     public List<MonthlyResult> Calculate(List<Trade> trades)
     {
@@ -144,6 +146,8 @@ public class TaxCalculator
         decimal compensatingBuyTotal = 0m;
         decimal profit = 0m;
         var compensatingTrades = new List<string>(); // Rastrear operações que compensam
+        var optionAuditEntries = new List<OptionAuditEntry>();
+        var runningNetAccumulated = _optionRunningNetAccumulated;
 
         var buyPositions = new Dictionary<string, (int Quantity, decimal AvgPrice)>();
         var shortPositions = new Dictionary<string, (int Quantity, decimal AvgPrice)>(); // Posições vendidas (short)
@@ -169,6 +173,21 @@ public class TaxCalculator
                         ? (shortPos.AvgPrice * quantityToClose) - costToClose
                         : -costToClose;
                     profit += tradeProfitLoss;
+
+                    if (!isStock && quantityToClose > 0)
+                    {
+                        runningNetAccumulated += -costToClose;
+                        optionAuditEntries.Add(new OptionAuditEntry
+                        {
+                            Date = trade.Date,
+                            Asset = trade.Asset,
+                            Side = trade.Side,
+                            Price = trade.Price,
+                            Quantity = quantityToClose,
+                            NetValueImpact = -costToClose,
+                            AccumulatedNetValue = runningNetAccumulated
+                        });
+                    }
 
                     if (!isStock && quantityToClose > 0)
                     {
@@ -251,6 +270,17 @@ public class TaxCalculator
                         if (!isStock)
                         {
                             profit += unitSellNet * remainingSell;
+                            runningNetAccumulated += unitSellNet * remainingSell;
+                            optionAuditEntries.Add(new OptionAuditEntry
+                            {
+                                Date = trade.Date,
+                                Asset = trade.Asset,
+                                Side = trade.Side,
+                                Price = trade.Price,
+                                Quantity = remainingSell,
+                                NetValueImpact = unitSellNet * remainingSell,
+                                AccumulatedNetValue = runningNetAccumulated
+                            });
                         }
 
                         if (shortPositions.ContainsKey(trade.Asset))
@@ -272,6 +302,17 @@ public class TaxCalculator
                     if (!isStock)
                     {
                         profit += trade.NetTotal;
+                        runningNetAccumulated += trade.NetTotal;
+                        optionAuditEntries.Add(new OptionAuditEntry
+                        {
+                            Date = trade.Date,
+                            Asset = trade.Asset,
+                            Side = trade.Side,
+                            Price = trade.Price,
+                            Quantity = trade.Quantity,
+                            NetValueImpact = trade.NetTotal,
+                            AccumulatedNetValue = runningNetAccumulated
+                        });
                     }
 
                     // Venda descoberta (short) - criar posição short
@@ -335,6 +376,8 @@ public class TaxCalculator
             result.OptionCompensatingBuyTotal = compensatingBuyTotal;
             result.OptionGrossSell = totalSell;
             result.OptionCompensatingTrades = compensatingTrades;
+            result.OptionAuditEntries = optionAuditEntries;
+            _optionRunningNetAccumulated = runningNetAccumulated;
 
             if (profit > 0)
             {

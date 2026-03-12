@@ -157,6 +157,17 @@ foreach (var result in results)
             Console.WriteLine($"      Total compensado....: R$ {result.OptionCompensatingBuyTotal,10:N2}");
         }
 
+        if (result.OptionAuditEntries.Count > 0)
+        {
+            Console.WriteLine();
+            Console.WriteLine("      Auditoria do liquido acumulado:");
+            foreach (var entry in result.OptionAuditEntries)
+            {
+                var tipo = entry.Side == "C" ? "COMPRA" : "VENDA";
+                Console.WriteLine($"         {entry.Date:dd/MM} {tipo,-6} {entry.Asset,-12} Impacto: R$ {entry.NetValueImpact,8:N2} | Acumulado: R$ {entry.AccumulatedNetValue,8:N2}");
+            }
+        }
+
         Console.WriteLine($"      Observacao..........: {result.OptionDescription}");
         Console.WriteLine();
     }

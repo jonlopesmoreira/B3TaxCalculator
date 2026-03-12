@@ -16,7 +16,7 @@ public class TradeParser
         var flatNoteMatches = Regex.Matches(flatText, notaPattern, RegexOptions.Singleline);
         var notaCostsDict = ExtractNotaCosts(rowText, flatNoteMatches);
 
-        var vistaPattern = @"([CV])VISTA([A-Z]+[0-9]*)\s*ON\s+[A-Z0-9]*@(\d{3})(\d+),(\d{2})(\d+)[.,]?(\d{2,3}),(\d{2})[DC]";
+        var vistaPattern = @"([CV])VISTA([A-Z]+[0-9]*)\s+(?:ON|PN|PNA|PNB|PNC|UNT)(?:\s+(?:N1|N2|NM|EJ))?\s+@\s*(\d+)\s+(\d+),(\d{2})\s+(\d{1,3}[\d\.]*)[,](\d{2})[DC]";
         var vistaMatches = Regex.Matches(flatText, vistaPattern);
 
         var tesouroDiretoPattern = @"\d+-BOVESPACVISTA([A-Z]+)\s+(LFTB\s+[A-Z0-9]+)\s*@[#]?(\d{1})(\d{3}),(\d{2})(\d{3}),(\d{2})[DC]";

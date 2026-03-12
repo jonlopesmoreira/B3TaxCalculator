@@ -6,6 +6,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
+    <Authors>Jonathas Lopes Moreira</Authors>
+    <Company>Jonathas Lopes Moreira</Company>
+    <Product>B3TaxCalculator</Product>
+    <AssemblyTitle>B3TaxCalculator</AssemblyTitle>
+    <Description>Calculador de Imposto de Renda - B3</Description>
+    <Copyright>© Jonathas Lopes Moreira</Copyright>
   </PropertyGroup>
 
   <ItemGroup>

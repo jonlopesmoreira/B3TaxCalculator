@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Drawing;
 using System.Text;
 using B3TaxCalculator.Services;
@@ -5,7 +6,12 @@ using System.Windows.Forms;
 
 internal sealed class MainForm : Form
 {
+    private const string LinkedInUrl = "https://www.linkedin.com/in/jonlopesmoreira/";
+    private const string GitHubUrl = "https://github.com/jonlopesmoreira";
+
     private readonly Label _instructionLabel;
+    private readonly Button _authorButton;
+    private readonly ContextMenuStrip _authorMenu;
     private readonly Button _selectFilesButton;
     private readonly Button _exitButton;
     private readonly RichTextBox _outputTextBox;
@@ -22,6 +28,29 @@ internal sealed class MainForm : Form
             AutoSize = true,
             Text = "Selecione as notas de corretagem em PDF para processar e visualizar o resultado abaixo."
         };
+
+        _authorButton = new Button
+        {
+            AutoSize = true,
+            Text = "Autor",
+            Anchor = AnchorStyles.Top | AnchorStyles.Right
+        };
+        _authorButton.Click += AuthorButton_Click;
+
+        _authorMenu = new ContextMenuStrip();
+        _authorMenu.Items.Add(new ToolStripMenuItem("Jonathas Lopes Moreira")
+        {
+            Enabled = false
+        });
+        _authorMenu.Items.Add(new ToolStripSeparator());
+
+        var linkedInItem = new ToolStripMenuItem("LinkedIn");
+        linkedInItem.Click += (_, _) => OpenUrl(LinkedInUrl);
+        _authorMenu.Items.Add(linkedInItem);
+
+        var gitHubItem = new ToolStripMenuItem("GitHub");
+        gitHubItem.Click += (_, _) => OpenUrl(GitHubUrl);
+        _authorMenu.Items.Add(gitHubItem);
 
         _selectFilesButton = new Button
         {
@@ -56,6 +85,19 @@ internal sealed class MainForm : Form
         buttonsPanel.Controls.Add(_selectFilesButton);
         buttonsPanel.Controls.Add(_exitButton);
 
+        var topPanel = new TableLayoutPanel
+        {
+            AutoSize = true,
+            Dock = DockStyle.Top,
+            ColumnCount = 2,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
+        topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        topPanel.Controls.Add(_instructionLabel, 0, 0);
+        topPanel.Controls.Add(_authorButton, 1, 0);
+
         var headerPanel = new TableLayoutPanel
         {
             AutoSize = true,
@@ -63,7 +105,7 @@ internal sealed class MainForm : Form
             ColumnCount = 1,
             Padding = new Padding(12)
         };
-        headerPanel.Controls.Add(_instructionLabel);
+        headerPanel.Controls.Add(topPanel);
         headerPanel.Controls.Add(buttonsPanel);
 
         var mainPanel = new TableLayoutPanel
@@ -131,6 +173,36 @@ internal sealed class MainForm : Form
         _selectFilesButton.Enabled = enabled;
         _exitButton.Enabled = enabled;
         UseWaitCursor = !enabled;
+    }
+
+    private void AuthorButton_Click(object? sender, EventArgs e)
+    {
+        _authorMenu.Show(_authorButton, new Point(0, _authorButton.Height));
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _authorMenu.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    private void OpenUrl(string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(url)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"Não foi possível abrir o link: {ex.Message}", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private static string BuildResultText(string[] files)

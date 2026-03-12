@@ -184,6 +184,7 @@ public class TaxCalculator
                             Side = trade.Side,
                             Price = trade.Price,
                             Quantity = quantityToClose,
+                            GrossValue = trade.Price * quantityToClose,
                             NetValueImpact = -costToClose,
                             AccumulatedNetValue = runningNetAccumulated
                         });
@@ -278,6 +279,7 @@ public class TaxCalculator
                                 Side = trade.Side,
                                 Price = trade.Price,
                                 Quantity = remainingSell,
+                                GrossValue = trade.Price * remainingSell,
                                 NetValueImpact = unitSellNet * remainingSell,
                                 AccumulatedNetValue = runningNetAccumulated
                             });
@@ -310,6 +312,7 @@ public class TaxCalculator
                             Side = trade.Side,
                             Price = trade.Price,
                             Quantity = trade.Quantity,
+                            GrossValue = trade.Total,
                             NetValueImpact = trade.NetTotal,
                             AccumulatedNetValue = runningNetAccumulated
                         });

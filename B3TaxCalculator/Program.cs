@@ -164,7 +164,7 @@ foreach (var result in results)
             foreach (var entry in result.OptionAuditEntries)
             {
                 var tipo = entry.Side == "C" ? "COMPRA" : "VENDA";
-                Console.WriteLine($"         {entry.Date:dd/MM} {tipo,-6} {entry.Asset,-12} Impacto: R$ {entry.NetValueImpact,8:N2} | Acumulado: R$ {entry.AccumulatedNetValue,8:N2}");
+                Console.WriteLine($"         {entry.Date:dd/MM} {tipo,-6} {entry.Asset,-12} Bruto: R$ {entry.GrossValue,8:N2} | Dif: R$ {entry.GrossToImpactDifference,8:N2} | Impacto: R$ {entry.NetValueImpact,8:N2} | Acumulado: R$ {entry.AccumulatedNetValue,8:N2}");
             }
         }
 

@@ -55,7 +55,7 @@ internal sealed class MainForm : Form
         _selectFilesButton = new Button
         {
             AutoSize = true,
-            Text = "Selecionar o PDF das notas"
+            Text = "Selecionar PDF(s)"
         };
         _selectFilesButton.Click += SelectFilesButton_Click;
 
@@ -72,7 +72,7 @@ internal sealed class MainForm : Form
             ReadOnly = true,
             WordWrap = false,
             Font = new Font("Consolas", 10),
-            Text = "Clique em 'Selecionar o PDF das notas' para processar os cálculos."
+            Text = "Clique em 'Selecionar PDF(s)' para inserir as notas de corretagem e processar os cálculos."
         };
 
         var buttonsPanel = new FlowLayoutPanel

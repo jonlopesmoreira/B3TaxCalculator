@@ -87,6 +87,33 @@ Esse projeto é útil para investidores que desejam:
 - entender o impacto de custos e recompras no resultado
 - visualizar uma memória de cálculo antes do preenchimento manual das obrigações fiscais
 
+## Screenshots
+
+> Adicione as capturas de tela em `docs/images/` para que apareçam automaticamente no README.
+
+### Tela principal
+
+Salve a imagem como `docs/images/main-screen.png`.
+
+```markdown
+![Tela principal](docs/images/main-screen.png)
+```
+
+### Resumo mensal
+
+Salve a imagem como `docs/images/monthly-summary.png`.
+
+```markdown
+![Resumo mensal](docs/images/monthly-summary.png)
+```
+
+### Sugestões de capturas
+
+- janela principal do aplicativo
+- seleção de PDFs
+- saída com resumo mensal processado
+- trecho da auditoria de opções
+
 ## Executar localmente
 
 Na raiz do repositório:

@@ -12,7 +12,7 @@ internal sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "Calculador de Imposto de Renda - B3";
+        Text = "Calculador de Imposto de Renda para opções - B3";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(1100, 720);
         Size = new Size(1200, 800);

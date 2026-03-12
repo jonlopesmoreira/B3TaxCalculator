@@ -119,6 +119,8 @@ Saída esperada:
 B3TaxCalculator\bin\Release\net10.0-windows\win-x64\publish\
 ```
 
+> O asset publicado no release `v1.0.0` é uma build **framework-dependent** para `win-x64` e requer o **.NET 10 Desktop Runtime** instalado no Windows.
+
 ## Estrutura do projeto
 
 ```text
@@ -149,7 +151,7 @@ B3TaxCalculator/
 - [x] cálculo para ações à vista
 - [x] cálculo para opções
 - [x] publicação `self-contained` em arquivo único
-- [ ] cobertura com testes automatizados
+- [x] testes unitários com xUnit
 - [ ] suporte a mais layouts de nota
 - [ ] exportação do resultado para arquivo
 - [ ] melhorias de usabilidade da interface

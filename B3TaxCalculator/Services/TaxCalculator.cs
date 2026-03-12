@@ -147,7 +147,8 @@ public class TaxCalculator
         decimal profit = 0m;
         var compensatingTrades = new List<string>(); // Rastrear operações que compensam
         var optionAuditEntries = new List<OptionAuditEntry>();
-        var runningNetAccumulated = _optionRunningNetAccumulated;
+        var startingOptionRunningNetAccumulated = _optionRunningNetAccumulated;
+        var runningNetAccumulated = startingOptionRunningNetAccumulated;
 
         var buyPositions = new Dictionary<string, (int Quantity, decimal AvgPrice)>();
         var shortPositions = new Dictionary<string, (int Quantity, decimal AvgPrice)>(); // Posições vendidas (short)
@@ -400,7 +401,9 @@ public class TaxCalculator
             {
                 result.OptionTax = result.OptionTaxableProfit * SwingTradeTaxRate;
                 result.OptionNetProfit = result.OptionTaxableProfit - result.OptionTax;
-                result.OptionDescription = $"DARF: R$ {result.OptionTax:N2} (15% sobre lucro de R$ {result.OptionTaxableProfit:N2})";
+                result.OptionDescription = startingOptionRunningNetAccumulated > 0
+                    ? $"DARF: R$ {result.OptionTax:N2} (15% sobre lucro de R$ {runningNetAccumulated:N2} - R$ {startingOptionRunningNetAccumulated:N2} = R$ {result.OptionTaxableProfit:N2})"
+                    : $"DARF: R$ {result.OptionTax:N2} (15% sobre lucro de R$ {result.OptionTaxableProfit:N2})";
                 _optionAccumulatedLoss = Math.Max(0, _optionAccumulatedLoss - result.OptionProfit);
             }
             else if (result.OptionLoss > 0)

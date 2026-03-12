@@ -222,12 +222,14 @@ internal sealed class MainForm : Form
             {
                 output.AppendLine($"Lendo: {Path.GetFileName(file)}");
                 var pdf = PdfReader.Read(file);
+#if DEBUG
                 var debugFolder = Path.Combine(AppContext.BaseDirectory, "DebugPdf");
                 Directory.CreateDirectory(debugFolder);
                 var baseName = Path.GetFileNameWithoutExtension(file);
                 File.WriteAllText(Path.Combine(debugFolder, $"{baseName}.flat.txt"), pdf.FlatText);
                 File.WriteAllText(Path.Combine(debugFolder, $"{baseName}.rows.txt"), pdf.RowText);
                 output.AppendLine($"  Debug salvo em: {debugFolder}");
+#endif
                 var trades = TradeParser.ParseFromText(pdf);
                 allTrades.AddRange(trades);
                 output.AppendLine($"  ✓ {trades.Count} operação(ões) encontrada(s)");

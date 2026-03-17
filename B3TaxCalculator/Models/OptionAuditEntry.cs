@@ -7,7 +7,8 @@ public class OptionAuditEntry
     public string Side { get; set; } = string.Empty;
     public decimal GrossValue { get; set; }
     public decimal NetValueImpact { get; set; }
-    public decimal GrossToImpactDifference => GrossValue - NetValueImpact;
+    public decimal Fees { get; set; }
+    public decimal GrossToImpactDifference => Fees;
     public decimal AccumulatedNetValue { get; set; }
     public decimal Price { get; set; }
     public int Quantity { get; set; }

@@ -5,7 +5,6 @@ public class NotaCosts
     public DateTime Date { get; set; }
     public string NotaNumber { get; set; } = string.Empty;
 
-    // Custos operacionais
     public decimal TaxaLiquidacao { get; set; }
     public decimal TaxaRegistro { get; set; }
     public decimal Emolumentos { get; set; }
@@ -21,13 +20,15 @@ public class NotaCosts
     public decimal IRRF { get; set; }
     public decimal Outros { get; set; }
 
-    // Total de custos
-    public decimal TotalCustos => 
-        TaxaLiquidacao + TaxaRegistro + Emolumentos + 
-        TaxaANA + TaxaTransferenciaAtivos + Corretagem + ISS + TaxaCustodia + 
-        TaxaTermoOpcoes + TaxaOperacional + Execucao + Impostos + 
-        IRRF + Outros;
+    public decimal TotalCustosExplicit { get; set; }
 
-    // Total de operações da nota (para ratear)
+    public decimal TotalCustos =>
+        TotalCustosExplicit > 0
+            ? TotalCustosExplicit
+            : TaxaLiquidacao + TaxaRegistro + Emolumentos +
+              TaxaANA + TaxaTransferenciaAtivos + Corretagem + ISS + TaxaCustodia +
+              TaxaTermoOpcoes + TaxaOperacional + Execucao + Impostos +
+              IRRF + Outros;
+
     public decimal TotalOperacoes { get; set; }
 }

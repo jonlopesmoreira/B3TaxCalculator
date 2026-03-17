@@ -205,6 +205,11 @@ internal sealed class MainForm : Form
         }
     }
 
+    private void InitializeComponent()
+    {
+
+    }
+
     private static string BuildResultText(string[] files)
     {
         var output = new StringBuilder();
@@ -232,9 +237,9 @@ internal sealed class MainForm : Form
 #endif
                 var trades = TradeParser.ParseFromText(pdf);
                 allTrades.AddRange(trades);
-                output.AppendLine($"  ✓ {trades.Count} operação(ões) encontrada(s)");
+                var validCount = trades.Count(t => !t.IsExercise);
+                output.AppendLine($"  ✓ {trades.Count} operação(ões) encontrada(s) ({validCount} válida(s) para cálculo)");
 
-                // Agrupar e mostrar por data/nota
                 var tradesByDate = trades.GroupBy(t => t.Date).OrderBy(g => g.Key);
 
                 foreach (var group in tradesByDate)
@@ -244,8 +249,8 @@ internal sealed class MainForm : Form
                     {
                         var tipo = trade.IsBuy ? "COMPRA" : "VENDA";
                         var market = trade.Market == "VISTA" ? "Acao" : "Opcao";
-                        // Formato tabular alinhado: TIPO | Market | Asset(20) | Qtd(3) x R$ Preco(8) = R$ Total(10)
-                        output.AppendLine($"   {tipo,-6} | {market,-5} | {trade.Asset,-16} | {trade.Quantity,4} * {trade.Price,-7:N2} = R$ {trade.Total,-8:N2}");
+                        var note = trade.IsExercise ? " (EXERC)" : string.Empty;
+                        output.AppendLine($"   {tipo,-6} | {market,-5} | {trade.Asset,-16} | {trade.Quantity,4} * {trade.Price,-7:N2} = R$ {trade.Total,-8:N2}{note}");
                     }
                 }
                 output.AppendLine();
@@ -256,7 +261,7 @@ internal sealed class MainForm : Form
             }
         }
 
-        output.AppendLine($"Total de operações: {allTrades.Count}");
+        output.AppendLine($"Total de operações: {allTrades.Count(t => !t.IsExercise)}");
         output.AppendLine();
 
         if (allTrades.Count == 0)
@@ -278,7 +283,6 @@ internal sealed class MainForm : Form
             output.AppendLine(new string('=', 50));
             output.AppendLine();
 
-            // Ações à vista
             if (result.StockTotalBuy > 0 || result.StockTotalSell > 0)
             {
                 output.AppendLine("   [ACOES A VISTA]");
@@ -311,7 +315,6 @@ internal sealed class MainForm : Form
                 output.AppendLine();
             }
 
-            // Opções
             if (result.OptionTotalBuy > 0 || result.OptionTotalSell > 0)
             {
                 output.AppendLine("   [OPCOES]");
@@ -338,7 +341,6 @@ internal sealed class MainForm : Form
                     output.AppendLine($"      DARF (15%)..........: R$ {result.OptionTax,10:N2}");
                 }
 
-                // Mostrar operações que compensaram (reduziram o lucro bruto)
                 if (result.OptionCompensatingTrades.Count > 0 && result.OptionTotalBuy > 0)
                 {
                     output.AppendLine();

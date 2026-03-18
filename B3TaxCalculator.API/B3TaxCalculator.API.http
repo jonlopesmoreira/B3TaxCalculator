@@ -1,0 +1,6 @@
+@B3TaxCalculator.API_HostAddress = http://localhost:5187
+
+GET {{B3TaxCalculator.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

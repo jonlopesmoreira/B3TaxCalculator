@@ -261,10 +261,25 @@ internal sealed class MainForm : Form
             }
         }
 
-        output.AppendLine($"Total de operações: {allTrades.Count(t => !t.IsExercise)}");
+        var validTrades = allTrades.Where(t => !t.IsExercise).ToList();
+        var exerciseTrades = allTrades.Where(t => t.IsExercise).ToList();
+
+        output.AppendLine($"Total de operações: {allTrades.Count}");
+        output.AppendLine($"Operações válidas para cálculo: {validTrades.Count}");
+
+        if (exerciseTrades.Any())
+        {
+            output.AppendLine();
+            output.AppendLine("📋 Exercícios de Opção (reduzem imposto):");
+            foreach (var trade in exerciseTrades.OrderBy(t => t.Date))
+            {
+                output.AppendLine($"   {trade.Date:dd/MM/yyyy} | {(trade.IsBuy ? "COMPRA" : "VENDA"),-6} | {trade.Asset,-16} | {trade.Quantity,4} x {trade.Price,-7:N2} = R$ {trade.Total:N2} | Redução: R$ {trade.Fees:N2}");
+            }
+        }
+
         output.AppendLine();
 
-        if (allTrades.Count == 0)
+        if (validTrades.Count == 0 && exerciseTrades.Count == 0)
         {
             output.AppendLine("Nenhuma operação encontrada nos PDFs.");
             return output.ToString();
@@ -359,7 +374,7 @@ internal sealed class MainForm : Form
                     foreach (var entry in result.OptionAuditEntries)
                     {
                         var tipo = entry.Side == "C" ? "COMPRA" : "VENDA";
-                        output.AppendLine($"         {entry.Date:dd/MM} {tipo,-6} {entry.Asset,-12} Bruto: R$ {entry.GrossValue,8:N2} | Dif: R$ {entry.GrossToImpactDifference,8:N2} | Impacto: R$ {entry.NetValueImpact,8:N2} | Acumulado: R$ {entry.AccumulatedNetValue,8:N2}");
+                        output.AppendLine($"         {entry.Date:dd/MM} {tipo,-6} {entry.Asset,-12} Bruto: R$ {entry.GrossValue,8:N2} | Dif: R$ {entry.GrossToImpactDifference,8:N2} | Impacto: R$ {entry.NetValueImpact,8:N2} | Mês: R$ {entry.MonthNetValue,8:N2} | Acumulado: R$ {entry.AccumulatedNetValue,8:N2}");
                     }
                 }
 

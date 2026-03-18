@@ -1,4 +1,6 @@
 <Solution>
   <Project Path="B3TaxCalculator/B3TaxCalculator.csproj" />
+  <Project Path="B3TaxCalculator.API/B3TaxCalculator.API.csproj" />
+  <Project Path="B3TaxCalculator.Core/B3TaxCalculator.Core.csproj" />
   <Project Path="B3TaxCalculator.Tests/B3TaxCalculator.Tests.csproj" />
 </Solution>

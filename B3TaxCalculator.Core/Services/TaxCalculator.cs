@@ -1,6 +1,6 @@
-﻿using B3TaxCalculator.Models;
+﻿using B3TaxCalculator.Core.Models;
 
-namespace B3TaxCalculator.Services;
+namespace B3TaxCalculator.Core.Services;
 
 public class TaxCalculator
 {
@@ -401,25 +401,10 @@ public class TaxCalculator
                 .ToList();
 
             var acc = startingOptionRunningNetAccumulated;
-            var monthAcc = 0m;
-            int? previousMonth = null;
-
             foreach (var entry in allEntries)
             {
-                int currentMonth = entry.Date.Month;
-
-                // Reset month accumulator when month changes
-                if (previousMonth.HasValue && previousMonth != currentMonth)
-                {
-                    monthAcc = 0m;
-                }
-
                 acc += entry.NetValueImpact;
-                monthAcc += entry.NetValueImpact;
-                entry.MonthNetValue = monthAcc;
                 entry.AccumulatedNetValue = acc;
-
-                previousMonth = currentMonth;
             }
 
             result.OptionAuditEntries = allEntries;

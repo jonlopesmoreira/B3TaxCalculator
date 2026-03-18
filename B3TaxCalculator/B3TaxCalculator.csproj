@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="PdfPig" Version="0.1.13" />
+    <ProjectReference Include="../B3TaxCalculator.Core/B3TaxCalculator.Core.csproj" />
   </ItemGroup>
 
 </Project>

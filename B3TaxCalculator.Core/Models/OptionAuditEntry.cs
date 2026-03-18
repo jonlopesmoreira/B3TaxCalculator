@@ -1,4 +1,4 @@
-namespace B3TaxCalculator.Models;
+namespace B3TaxCalculator.Core.Models;
 
 public class OptionAuditEntry
 {
@@ -10,7 +10,6 @@ public class OptionAuditEntry
     public decimal Fees { get; set; }
     public decimal GrossToImpactDifference => Fees;
     public decimal AccumulatedNetValue { get; set; }
-    public decimal MonthNetValue { get; set; }
     public decimal Price { get; set; }
     public int Quantity { get; set; }
 }

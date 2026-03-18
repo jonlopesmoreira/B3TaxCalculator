@@ -11,93 +11,141 @@ cd B3TaxCalculator.API
 dotnet run
 ```
 
-A API estará disponível em `https://localhost:5001` (HTTPS) ou `http://localhost:5000` (HTTP).
+A API estará disponível em `http://localhost:5187` (HTTP) ou `https://localhost:7031` (HTTPS).
 
 ### 2. Acessar a Documentação Swagger
 
-Navegue até: `https://localhost:5001/swagger/index.html`
+Navegue até: `http://localhost:5187/swagger/index.html`
 
 Você verá a interface interativa do Swagger com todos os endpoints disponíveis.
+
+![Swagger UI](./swagger-ui.png)
 
 ---
 
 ## 📡 Endpoints Disponíveis
 
-### **1. POST /api/taxcalculation/process-pdf**
+### **1. POST /api/tax-calculations/upload-pdf**
 
-Processa um único arquivo PDF de nota de corretagem.
+Calcula impostos a partir de um ou múltiplos PDFs de notas de operação da B3.
 
 **Request:**
-```http
-POST /api/taxcalculation/process-pdf HTTP/1.1
-Content-Type: multipart/form-data
+```bash
+curl -X POST http://localhost:5187/api/tax-calculations/upload-pdf \
+  -F "files=@nota.pdf"
+```
 
-[Arquivo PDF]
+**Request (múltiplos PDFs):**
+```bash
+curl -X POST http://localhost:5187/api/tax-calculations/upload-pdf \
+  -F "files=@nota1.pdf" -F "files=@nota2.pdf"
 ```
 
 **Response (Success - 200):**
 ```json
 {
+  "id": "550e8400-e29b-41d4-a716-446655440000",
   "success": true,
-  "fileName": "XPINC_NOTA_NEGOCIACAO_B3_25_2_2026.pdf",
-  "tradesFound": 24,
-  "validTrades": 23,
-  "monthlyResults": [
+  "filesProcessed": ["nota.pdf"],
+  "totalFilesRequested": 1,
+  "totalTradesFound": 24,
+  "totalValidTrades": 23,
+  "exerciseTrades": [
     {
-      "year": 2026,
-      "month": 2,
-      "stockTotalBuy": 354.14,
-      "stockTotalSell": 0.00,
-      "stockTotalFees": 0.16,
-      "stockProfit": 0,
-      "stockLoss": 0,
-      "stockTax": 0,
-      "stockIsExempt": true,
-      "stockDescription": "Isento - vendas (R$ 0,00) abaixo de R$ 20.000,00",
-      "optionTotalBuy": 39.03,
-      "optionTotalSell": 77.89,
-      "optionTotalFees": 88.28,
-      "optionCompensatingBuyTotal": 39.03,
-      "optionGrossSell": 77.89,
-      "optionProfit": 38.86,
-      "optionTax": 5.83,
-      "optionDescription": "DARF: R$ 5,83 (15% sobre lucro de R$ 38,86)",
-      "optionAuditEntries": [...]
+      "date": "2026-01-15T00:00:00",
+      "asset": "PETR4",
+      "side": "C",
+      "quantity": 100,
+      "price": 25.50,
+      "total": 2550.00,
+      "reduction": 10.50,
+      "note": "Exercício de Opção - reduz imposto"
     }
-  ]
-}
-```
-
-**Response (Error - 400/500):**
-```json
-{
-  "success": false,
-  "message": "Arquivo PDF é obrigatório",
-  "error": null
+  ],
+  "totalTaxToPayThisMonth": 150.75,
+  "monthlyResults": [...]
 }
 ```
 
 ---
 
-### **2. POST /api/taxcalculation/process-pdfs**
+### **2. POST /api/tax-calculations/calculate**
 
-Processa múltiplos arquivos PDF de uma vez.
+Calcula impostos a partir de uma lista de operações em JSON.
 
 **Request:**
-```http
-POST /api/taxcalculation/process-pdfs HTTP/1.1
-Content-Type: multipart/form-data
-
-[Arquivo 1]
-[Arquivo 2]
-[Arquivo 3]
+```bash
+curl -X POST http://localhost:5187/api/tax-calculations/calculate \
+  -H "Content-Type: application/json" \
+  -d '[
+    {
+      "date": "2026-01-15T00:00:00",
+      "asset": "PETR4",
+      "market": "VISTA",
+      "side": "C",
+      "quantity": 100,
+      "price": 25.50,
+      "fees": 10.50,
+      "isExercise": false,
+      "notaNumber": "123456"
+    }
+  ]'
 ```
 
 **Response (Success - 200):**
 ```json
 {
+  "id": "550e8400-e29b-41d4-a716-446655440000",
   "success": true,
-  "filesProcessed": [
+  "tradesProcessed": 1,
+  "validTrades": 1,
+  "exerciseTrades": [],
+  "totalTaxToPayThisMonth": 0.00,
+  "monthlyResults": [...]
+}
+```
+
+---
+
+## 📝 Modelo de Dados - Trade
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `date` | DateTime | Data da operação (formato ISO 8601) |
+| `asset` | string | Código do ativo (ex: PETR4, VALE3) |
+| `market` | string | Tipo de mercado (ex: VISTA, FUTURO) |
+| `side` | string | Lado da operação: `"C"` (Compra) ou `"V"` (Venda) |
+| `quantity` | int | Quantidade de ações |
+| `price` | decimal | Preço unitário |
+| `fees` | decimal | Taxas/corretagem |
+| `isExercise` | boolean | Se é exercício de opção |
+| `notaNumber` | string | Número da nota de corretagem |
+
+---
+
+## ✨ Diferença entre os Endpoints
+
+- **`/upload-pdf`**: Para quando você tem **PDFs da B3**. A API extrai os dados automaticamente.
+- **`/calculate`**: Para quando você já tem os **dados estruturados** em JSON (API de terceiros, banco de dados, etc.)
+
+Ambos endpoints retornam o **mesmo resultado** - a única diferença é a forma de entrada.
+
+---
+
+## 🛠️ Tecnologias
+
+- **.NET 10** com ASP.NET Core
+- **Swashbuckle** para documentação Swagger
+- **iText7** para leitura de PDFs
+- **C# 13**
+
+---
+
+## 📄 Licença
+
+MIT
+
+```
     "XPINC_NOTA_NEGOCIACAO_B3_25_2_2026.pdf",
     "XPINC_NOTA_NEGOCIACAO_B3_3_2026.pdf"
   ],

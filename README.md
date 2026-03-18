@@ -13,9 +13,14 @@ Projeto focado em **automação de processamento de documentos financeiros**, **
 
 O objetivo do projeto é facilitar a conferência de operações e a apuração mensal, consolidando compras, vendas, custos e compensações em uma interface simples.
 
+O projeto oferece duas formas de acesso:
+- **Interface Desktop**: aplicação Windows Forms para uso interativo
+- **API REST**: endpoints para integração com outras aplicações
+
 Além do uso prático, este repositório também demonstra experiência com:
 
 - desenvolvimento de aplicações desktop em .NET
+- criação de APIs REST com ASP.NET Core
 - modelagem de regras de negócio
 - parsing de texto extraído de PDF
 - organização de código em camadas simples de UI, modelos e serviços
@@ -23,6 +28,7 @@ Além do uso prático, este repositório também demonstra experiência com:
 
 ### Funcionalidades
 
+#### Desktop
 - importação de uma ou mais notas de corretagem em PDF
 - extração automática das operações encontradas no documento
 - separação e consolidação por mês
@@ -33,6 +39,14 @@ Além do uso prático, este repositório também demonstra experiência com:
 - exibição de lucro, prejuízo, compensações e DARF
 - aplicação de saldo acumulado e valor mínimo para pagamento
 - auditoria textual do resultado líquido acumulado para opções
+- identificação de exercícios de opção e seu impacto na redução de impostos
+
+#### API REST
+- processamento de um ou múltiplos PDFs via upload
+- cálculo direto a partir de lista JSON de operações
+- resposta estruturada com detalhamento mensal
+- documentação interativa via Swagger
+- informações sobre operações de exercício de opção
 
 ## Tecnologias
 
@@ -59,11 +73,104 @@ Além do uso prático, este repositório também demonstra experiência com:
 
 ## Como usar
 
+### Interface Desktop
+
 1. Abra o programa.
 2. Clique em **Selecionar PDF(s)**.
 3. Escolha uma ou mais notas de corretagem.
 4. Aguarde o processamento.
 5. Analise o resumo mensal exibido na tela.
+
+### API REST
+
+#### Iniciar a API
+
+Na raiz do repositório:
+
+```powershell
+dotnet run --project .\B3TaxCalculator.API\B3TaxCalculator.API.csproj
+```
+
+A API estará disponível em:
+- **URL base**: `http://localhost:5187`
+- **Swagger**: `http://localhost:5187` (documentação interativa)
+
+#### Endpoints disponíveis
+
+##### 1. Processar um PDF
+```http
+POST /api/taxcalculation/process-pdf
+Content-Type: multipart/form-data
+
+file: <arquivo PDF>
+```
+
+**Resposta:**
+```json
+{
+  "success": true,
+  "fileName": "NOTA_NEGOCIACAO.pdf",
+  "tradesFound": 10,
+  "validTrades": 9,
+  "exerciseTrades": [
+    {
+      "date": "2026-03-13",
+      "asset": "BBDCO195W2E",
+      "side": "V",
+      "quantity": 100,
+      "price": 19.46,
+      "total": 1946.00,
+      "reduction": 11.93,
+      "note": "Exercício de Opção - reduz imposto"
+    }
+  ],
+  "totalTaxToPayThisMonth": 54.93,
+  "monthlyResults": [...]
+}
+```
+
+##### 2. Processar múltiplos PDFs
+```http
+POST /api/taxcalculation/process-pdfs
+Content-Type: multipart/form-data
+
+files: <múltiplos arquivos PDF>
+```
+
+**Resposta:** Similar ao endpoint anterior, mas consolidando todos os PDFs.
+
+##### 3. Calcular a partir de JSON
+```http
+POST /api/taxcalculation/calculate-trades
+Content-Type: application/json
+
+[
+  {
+    "date": "2026-01-15",
+    "asset": "PETR4",
+    "market": "VISTA",
+    "side": "C",
+    "quantity": 100,
+    "price": 25.50,
+    "fees": 10.00,
+    "isExercise": false
+  }
+]
+```
+
+#### Rodar API e Desktop simultaneamente
+
+No Visual Studio:
+
+1. Clique com botão direito na **Solution** (B3TaxCalculator)
+2. Selecione **"Set Startup Projects..."**
+3. Escolha **"Multiple startup projects"**
+4. Configure:
+   - `B3TaxCalculator` → **Start**
+   - `B3TaxCalculator.API` → **Start**
+5. Pressione **F5**
+
+Ambos os projetos serão iniciados simultaneamente.
 
 ## O que é exibido no resultado
 
@@ -77,6 +184,8 @@ O aplicativo mostra, entre outros dados:
 - lucro tributável
 - DARF devido
 - saldo transportado para o mês seguinte
+- exercícios de opção com valor de redução de imposto
+- auditoria detalhada do acumulado mensal (sem considerar meses anteriores)
 
 ## Caso de uso
 
@@ -99,11 +208,27 @@ Esse projeto é útil para investidores que desejam:
 
 ## Executar localmente
 
+### Desktop
+
 Na raiz do repositório:
 
 ```powershell
 dotnet run --project .\B3TaxCalculator\B3TaxCalculator.csproj
 ```
+
+### API
+
+Na raiz do repositório:
+
+```powershell
+dotnet run --project .\B3TaxCalculator.API\B3TaxCalculator.API.csproj
+```
+
+Acesse `http://localhost:5187` para visualizar a documentação Swagger.
+
+### API + Desktop (simultaneamente)
+
+Use a opção **"Multiple startup projects"** do Visual Studio conforme descrito na seção [Como usar - Rodar API e Desktop simultaneamente](#rodar-api-e-desktop-simultaneamente).
 
 ## Publicar executável
 
@@ -125,17 +250,34 @@ B3TaxCalculator\bin\Release\net10.0-windows\win-x64\publish\
 
 ```text
 B3TaxCalculator/
-├── MainForm.cs
-├── Program.cs
-├── Models/
-│   ├── NotaCosts.cs
-│   ├── OptionAuditEntry.cs
-│   ├── PdfReadResult.cs
-│   └── Trade.cs
-└── Services/
-    ├── PdfReader.cs
-    ├── TaxCalculator.cs
-    └── TradeParser.cs
+├── B3TaxCalculator/                      # Desktop (Windows Forms)
+│   ├── MainForm.cs
+│   ├── Program.cs
+│   ├── Models/
+│   │   ├── NotaCosts.cs
+│   │   ├── OptionAuditEntry.cs
+│   │   ├── PdfReadResult.cs
+│   │   └── Trade.cs
+│   └── Services/
+│       ├── PdfReader.cs
+│       ├── TaxCalculator.cs
+│       └── TradeParser.cs
+│
+├── B3TaxCalculator.API/                  # API REST (ASP.NET Core)
+│   ├── Controllers/
+│   │   └── TaxCalculationController.cs
+│   ├── Converters/
+│   │   └── RoundedDecimalConverter.cs
+│   ├── Models/
+│   │   └── TaxCalculationRequest.cs
+│   └── Program.cs
+│
+├── B3TaxCalculator.Core/                 # Modelos compartilhados
+│   └── Models/
+│
+└── B3TaxCalculator.Tests/                # Testes unitários (xUnit)
+    └── Services/
+        └── TaxCalculatorTests.cs
 ```
 
 ## Observações
@@ -150,20 +292,28 @@ B3TaxCalculator/
 - [x] leitura de PDFs
 - [x] cálculo para ações à vista
 - [x] cálculo para opções
+- [x] API REST com 3 endpoints
+- [x] documentação via Swagger
+- [x] identificação de exercícios de opção
+- [x] auditoria com acumulado por mês
 - [x] publicação `self-contained` em arquivo único
 - [x] testes unitários com xUnit
 - [ ] suporte a mais layouts de nota
 - [ ] exportação do resultado para arquivo
 - [ ] melhorias de usabilidade da interface
+- [ ] autenticação na API
 
 ## Portfólio
 
 Este projeto pode ser apresentado como exemplo de:
 
 - aplicação desktop com foco em produtividade
+- API REST com documentação Swagger
 - automação de tarefa financeira recorrente
 - transformação de documento semiestruturado em informação útil
 - implementação de regra de negócio com rastreabilidade no resultado final
+- integração de duas interfaces (desktop + web service)
+- testes unitários e validação de cálculos
 
 ## Contribuição
 

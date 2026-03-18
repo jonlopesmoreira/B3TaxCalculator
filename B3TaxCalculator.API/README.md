@@ -8,6 +8,8 @@ API REST para cálculo de impostos sobre operações de trading na B3.
 
 > 💡 **Aceita PDFs de notas de corretagem ou dados estruturados em JSON**
 
+> 📌 **Parte do projeto [B3TaxCalculator](../README.md)** - Veja a documentação principal para mais contexto
+
 ## 📑 Índice
 
 - [Pré-requisitos](#-pré-requisitos)

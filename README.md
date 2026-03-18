@@ -83,94 +83,35 @@ Além do uso prático, este repositório também demonstra experiência com:
 
 ### API REST
 
-#### Iniciar a API
+#### API REST
 
-Na raiz do repositório:
+Para usar a API REST em produção ou integração com outras aplicações:
+
+**📚 [Documentação Completa da API →](./B3TaxCalculator.API/README.md)**
+
+A documentação detalhada inclui:
+- ✅ Guia de instalação
+- ✅ Exemplos com curl, PowerShell e Postman
+- ✅ Modelos de dados completos
+- ✅ Troubleshooting e FAQs
+- ✅ Roadmap de funcionalidades
+
+**Início rápido:**
 
 ```powershell
 dotnet run --project .\B3TaxCalculator.API\B3TaxCalculator.API.csproj
 ```
 
-A API estará disponível em:
-- **URL base**: `http://localhost:5187`
-- **Swagger**: `http://localhost:5187` (documentação interativa)
+Depois acesse: `http://localhost:5187/swagger/index.html`
 
-#### Endpoints disponíveis
+#### Endpoints Principais
 
-##### 1. Processar um PDF
-```http
-POST /api/taxcalculation/process-pdf
-Content-Type: multipart/form-data
+| Endpoint | Método | Descrição |
+|----------|--------|-----------|
+| `/api/tax-calculations/upload-pdf` | POST | Upload de PDF(s) da B3 |
+| `/api/tax-calculations/calculate` | POST | Cálculo direto de JSON |
 
-file: <arquivo PDF>
-```
-
-**Resposta:**
-```json
-{
-  "success": true,
-  "fileName": "NOTA_NEGOCIACAO.pdf",
-  "tradesFound": 10,
-  "validTrades": 9,
-  "exerciseTrades": [
-    {
-      "date": "2026-03-13",
-      "asset": "BBDCO195W2E",
-      "side": "V",
-      "quantity": 100,
-      "price": 19.46,
-      "total": 1946.00,
-      "reduction": 11.93,
-      "note": "Exercício de Opção - reduz imposto"
-    }
-  ],
-  "totalTaxToPayThisMonth": 54.93,
-  "monthlyResults": [...]
-}
-```
-
-##### 2. Processar múltiplos PDFs
-```http
-POST /api/taxcalculation/process-pdfs
-Content-Type: multipart/form-data
-
-files: <múltiplos arquivos PDF>
-```
-
-**Resposta:** Similar ao endpoint anterior, mas consolidando todos os PDFs.
-
-##### 3. Calcular a partir de JSON
-```http
-POST /api/taxcalculation/calculate-trades
-Content-Type: application/json
-
-[
-  {
-    "date": "2026-01-15",
-    "asset": "PETR4",
-    "market": "VISTA",
-    "side": "C",
-    "quantity": 100,
-    "price": 25.50,
-    "fees": 10.00,
-    "isExercise": false
-  }
-]
-```
-
-#### Rodar API e Desktop simultaneamente
-
-No Visual Studio:
-
-1. Clique com botão direito na **Solution** (B3TaxCalculator)
-2. Selecione **"Set Startup Projects..."**
-3. Escolha **"Multiple startup projects"**
-4. Configure:
-   - `B3TaxCalculator` → **Start**
-   - `B3TaxCalculator.API` → **Start**
-5. Pressione **F5**
-
-Ambos os projetos serão iniciados simultaneamente.
+Veja a [documentação da API](./B3TaxCalculator.API/README.md) para exemplos completos.
 
 ## O que é exibido no resultado
 

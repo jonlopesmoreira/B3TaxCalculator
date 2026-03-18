@@ -1,8 +1,9 @@
 # B3TaxCalculator API
 
-[![.NET Version](https://img.shields.io/badge/.NET-10-blue?logo=dotnet)](https://dotnet.microsoft.com/download)
+[![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/license-MIT-green)](../LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/jonlopesmoreira/B3TaxCalculator?style=social)](https://github.com/jonlopesmoreira/B3TaxCalculator)
+[![Swagger](https://img.shields.io/badge/API-Swagger-85EA2D?logo=swagger)](http://localhost:5187/swagger)
 
 API REST para cálculo de impostos sobre operações de trading na B3.
 

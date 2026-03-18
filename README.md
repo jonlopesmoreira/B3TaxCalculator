@@ -2,8 +2,8 @@
 
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Windows Forms](https://img.shields.io/badge/Windows%20Forms-Desktop-0078D4?logo=windows&logoColor=white)](https://learn.microsoft.com/dotnet/desktop/winforms/)
-[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white)](#)
-[![Status](https://img.shields.io/badge/status-em%20desenvolvimento-2EA44F)](#)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)](https://github.com/jonlopesmoreira/B3TaxCalculator)
 
 Aplicativo desktop em **Windows Forms (.NET 10)** para leitura de **notas de corretagem em PDF** e geração de um **resumo mensal de apuração de imposto** para operações da **B3**.
 

@@ -1,8 +1,61 @@
 # B3TaxCalculator API
 
+[![.NET Version](https://img.shields.io/badge/.NET-10-blue?logo=dotnet)](https://dotnet.microsoft.com/download)
+[![License](https://img.shields.io/badge/license-MIT-green)](../LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/jonlopesmoreira/B3TaxCalculator?style=social)](https://github.com/jonlopesmoreira/B3TaxCalculator)
+
 API REST para cálculo de impostos sobre operações de trading na B3.
 
-## 🚀 Como Usar
+> 💡 **Aceita PDFs de notas de corretagem ou dados estruturados em JSON**
+
+## 📑 Índice
+
+- [Pré-requisitos](#-pré-requisitos)
+- [Instalação](#-instalação)
+- [Uso Rápido](#-uso-rápido)
+- [Endpoints](#-endpoints)
+- [Modelo de Dados](#-modelo-de-dados)
+- [Exemplos Completos](#-exemplos-completos)
+- [Troubleshooting](#-troubleshooting)
+- [Roadmap](#-roadmap)
+- [Contribuindo](#-contribuindo)
+
+---
+
+## ✅ Pré-requisitos
+
+- **.NET 10** ou superior ([Download](https://dotnet.microsoft.com/download/dotnet/10.0))
+- **Git** (opcional, apenas se clonar do GitHub)
+- **Postman** ou **curl** (para testar a API)
+
+Verifique a instalação:
+```bash
+dotnet --version
+```
+
+---
+
+## 🔧 Instalação
+
+### 1. Clone o repositório
+```bash
+git clone https://github.com/jonlopesmoreira/B3TaxCalculator.git
+cd B3TaxCalculator
+```
+
+### 2. Restaure as dependências
+```bash
+dotnet restore
+```
+
+### 3. Compile o projeto
+```bash
+dotnet build
+```
+
+---
+
+## 🚀 Uso Rápido
 
 ### 1. Iniciar a API
 
@@ -11,42 +64,50 @@ cd B3TaxCalculator.API
 dotnet run
 ```
 
-A API estará disponível em `http://localhost:5187` (HTTP) ou `https://localhost:7031` (HTTPS).
+> 📍 A API estará disponível em:
+> - **HTTP**: `http://localhost:5187`
+> - **HTTPS**: `https://localhost:7031`
 
 ### 2. Acessar a Documentação Swagger
 
-Navegue até: `http://localhost:5187/swagger/index.html`
+Abra no navegador:
+```
+http://localhost:5187/swagger/index.html
+```
 
-Você verá a interface interativa do Swagger com todos os endpoints disponíveis.
+Você verá a interface interativa com todos os endpoints:
 
 ![Swagger UI](./swagger-ui.png)
 
 ---
 
-## 📡 Endpoints Disponíveis
+## 📡 Endpoints
 
-### **1. POST /api/tax-calculations/upload-pdf**
+### **POST `/api/tax-calculations/upload-pdf`** 📄
 
 Calcula impostos a partir de um ou múltiplos PDFs de notas de operação da B3.
 
-**Request:**
+**Quando usar:** Você tem PDFs de notas de corretagem da B3 e quer que a API extraia os dados automaticamente.
+
+#### Request - PDF Único
 ```bash
 curl -X POST http://localhost:5187/api/tax-calculations/upload-pdf \
-  -F "files=@nota.pdf"
+  -F "files=@nota_janeiro.pdf"
 ```
 
-**Request (múltiplos PDFs):**
+#### Request - Múltiplos PDFs
 ```bash
 curl -X POST http://localhost:5187/api/tax-calculations/upload-pdf \
-  -F "files=@nota1.pdf" -F "files=@nota2.pdf"
+  -F "files=@nota_janeiro.pdf" \
+  -F "files=@nota_fevereiro.pdf"
 ```
 
-**Response (Success - 200):**
+#### Response (Sucesso - 200)
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "success": true,
-  "filesProcessed": ["nota.pdf"],
+  "filesProcessed": ["nota_janeiro.pdf"],
   "totalFilesRequested": 1,
   "totalTradesFound": 24,
   "totalValidTrades": 23,
@@ -63,17 +124,37 @@ curl -X POST http://localhost:5187/api/tax-calculations/upload-pdf \
     }
   ],
   "totalTaxToPayThisMonth": 150.75,
-  "monthlyResults": [...]
+  "monthlyResults": [
+    {
+      "year": 2026,
+      "month": 1,
+      "stockTotalBuy": 5000.00,
+      "stockTotalSell": 4500.00,
+      "stockTax": 45.00,
+      "optionProfit": 150.00,
+      "optionTax": 22.50
+    }
+  ]
+}
+```
+
+#### Response (Erro - 400)
+```json
+{
+  "success": false,
+  "message": "Nenhum arquivo PDF fornecido"
 }
 ```
 
 ---
 
-### **2. POST /api/tax-calculations/calculate**
+### **POST `/api/tax-calculations/calculate`** 📊
 
 Calcula impostos a partir de uma lista de operações em JSON.
 
-**Request:**
+**Quando usar:** Você já tem os dados estruturados (API terceira, banco de dados, etc.) e não precisa parsear PDF.
+
+#### Request
 ```bash
 curl -X POST http://localhost:5187/api/tax-calculations/calculate \
   -H "Content-Type: application/json" \
@@ -88,62 +169,219 @@ curl -X POST http://localhost:5187/api/tax-calculations/calculate \
       "fees": 10.50,
       "isExercise": false,
       "notaNumber": "123456"
+    },
+    {
+      "date": "2026-01-20T00:00:00",
+      "asset": "PETR4",
+      "market": "VISTA",
+      "side": "V",
+      "quantity": 50,
+      "price": 26.00,
+      "fees": 8.00,
+      "isExercise": false,
+      "notaNumber": "123457"
     }
   ]'
 ```
 
-**Response (Success - 200):**
+#### Response (Sucesso - 200)
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "success": true,
-  "tradesProcessed": 1,
-  "validTrades": 1,
+  "tradesProcessed": 2,
+  "validTrades": 2,
   "exerciseTrades": [],
-  "totalTaxToPayThisMonth": 0.00,
-  "monthlyResults": [...]
+  "totalTaxToPayThisMonth": 22.50,
+  "monthlyResults": [
+    {
+      "year": 2026,
+      "month": 1,
+      "stockTotalBuy": 2550.00,
+      "stockTotalSell": 1300.00,
+      "stockProfit": 250.00,
+      "stockTax": 22.50
+    }
+  ]
 }
 ```
 
 ---
 
-## 📝 Modelo de Dados - Trade
+## 📝 Modelo de Dados
 
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `date` | DateTime | Data da operação (formato ISO 8601) |
-| `asset` | string | Código do ativo (ex: PETR4, VALE3) |
-| `market` | string | Tipo de mercado (ex: VISTA, FUTURO) |
-| `side` | string | Lado da operação: `"C"` (Compra) ou `"V"` (Venda) |
-| `quantity` | int | Quantidade de ações |
-| `price` | decimal | Preço unitário |
-| `fees` | decimal | Taxas/corretagem |
-| `isExercise` | boolean | Se é exercício de opção |
-| `notaNumber` | string | Número da nota de corretagem |
+### Trade (Operação)
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|:-----------:|-----------|
+| `date` | DateTime | ✅ | Data da operação (ISO 8601: `2026-01-15T00:00:00`) |
+| `asset` | string | ✅ | Código do ativo (ex: `PETR4`, `VALE3`, `CMINO540`) |
+| `market` | string | ✅ | Tipo de mercado (`VISTA`, `FUTURO`, `OPCAO_COMPRA`, `OPCAO_VENDA`) |
+| `side` | string | ✅ | Lado: `"C"` (Compra) ou `"V"` (Venda) |
+| `quantity` | int | ✅ | Quantidade de ações/contratos |
+| `price` | decimal | ✅ | Preço unitário |
+| `fees` | decimal | ✅ | Taxas/corretagem |
+| `isExercise` | boolean | ❌ | Exercício de opção (padrão: `false`) |
+| `notaNumber` | string | ❌ | Número da nota de corretagem |
 
 ---
 
-## ✨ Diferença entre os Endpoints
+## 🎯 Exemplos Completos
 
-- **`/upload-pdf`**: Para quando você tem **PDFs da B3**. A API extrai os dados automaticamente.
-- **`/calculate`**: Para quando você já tem os **dados estruturados** em JSON (API de terceiros, banco de dados, etc.)
+### Exemplo 1: Operação de Compra e Venda de Ação
 
-Ambos endpoints retornam o **mesmo resultado** - a única diferença é a forma de entrada.
+```json
+[
+  {
+    "date": "2026-01-15T00:00:00",
+    "asset": "PETR4",
+    "market": "VISTA",
+    "side": "C",
+    "quantity": 100,
+    "price": 25.50,
+    "fees": 10.00,
+    "isExercise": false,
+    "notaNumber": "123456"
+  },
+  {
+    "date": "2026-01-25T00:00:00",
+    "asset": "PETR4",
+    "market": "VISTA",
+    "side": "V",
+    "quantity": 100,
+    "price": 26.00,
+    "fees": 10.00,
+    "isExercise": false,
+    "notaNumber": "123457"
+  }
+]
+```
+
+**Resultado esperado:**
+- Custo total de compra: R$ 2.550,00 + R$ 10,00 = R$ 2.560,00
+- Receita de venda: R$ 2.600,00 - R$ 10,00 = R$ 2.590,00
+- **Lucro: R$ 30,00**
+- **Imposto (15%): R$ 4,50**
+
+---
+
+### Exemplo 2: Operações com Opções
+
+```json
+[
+  {
+    "date": "2026-01-15T00:00:00",
+    "asset": "CMINO540",
+    "market": "OPCAO_VENDA",
+    "side": "V",
+    "quantity": 100,
+    "price": 0.14,
+    "fees": 0.02,
+    "isExercise": false,
+    "notaNumber": "123456"
+  },
+  {
+    "date": "2026-01-20T00:00:00",
+    "asset": "CMINO540",
+    "market": "OPCAO_VENDA",
+    "side": "C",
+    "quantity": 100,
+    "price": 0.10,
+    "fees": 0.01,
+    "isExercise": false,
+    "notaNumber": "123457"
+  }
+]
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### ❌ Erro: "Unable to start program"
+
+**Solução:**
+```bash
+# Limpe e rebuild
+dotnet clean
+dotnet build
+```
+
+### ❌ Erro: "Port 5187 already in use"
+
+**Solução:**
+```bash
+# Encontre o processo
+Get-NetTCPConnection -LocalPort 5187 -ErrorAction SilentlyContinue
+
+# Ou use outra porta
+dotnet run --urls "http://localhost:5188"
+```
+
+### ❌ PDF não é reconhecido
+
+**Solução:**
+- Verifique se o PDF é de uma corretora B3 suportada
+- O arquivo deve estar em formato texto (PDF searchable)
+- PDFs digitalizados (imagem) não são suportados
+
+### ❌ CORS Error
+
+**Solução:** A API já tem CORS habilitado para todas as origens. Verifique o `Program.cs`:
+```csharp
+options.AllowAnyOrigin()
+       .AllowAnyMethod()
+       .AllowAnyHeader();
+```
 
 ---
 
 ## 🛠️ Tecnologias
 
-- **.NET 10** com ASP.NET Core
-- **Swashbuckle** para documentação Swagger
-- **iText7** para leitura de PDFs
-- **C# 13**
+| Tecnologia | Versão | Propósito |
+|-----------|--------|----------|
+| **.NET** | 10 | Framework principal |
+| **ASP.NET Core** | 10 | Framework web |
+| **Swashbuckle** | 6.8.1 | Documentação Swagger |
+| **iText7** | - | Leitura de PDFs |
+| **C#** | 13 | Linguagem |
+
+---
+
+## 🚧 Roadmap
+
+- [ ] Suporte para mais corretoras B3
+- [ ] Cache de cálculos
+- [ ] Autenticação/Autorização
+- [ ] Limite de rate limiting
+- [ ] Exportar relatórios em Excel
+- [ ] WebSocket para cálculos em tempo real
+- [ ] Integração com DARF automático
+
+---
+
+## 🤝 Contribuindo
+
+Contribuições são bem-vindas! Para contribuir:
+
+1. **Fork** o repositório
+2. **Crie uma branch** para sua feature (`git checkout -b feature/AmazingFeature`)
+3. **Commit** suas mudanças (`git commit -m 'Add AmazingFeature'`)
+4. **Push** para a branch (`git push origin feature/AmazingFeature`)
+5. **Abra um Pull Request**
+
+### Diretrizes de Contribuição
+
+- Siga o padrão C# existente
+- Adicione testes para novas funcionalidades
+- Atualize o README se necessário
+- Escreva commits claros e descritivos
 
 ---
 
 ## 📄 Licença
 
-MIT
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](../LICENSE) para detalhes.
 
 ```
     "XPINC_NOTA_NEGOCIACAO_B3_25_2_2026.pdf",
